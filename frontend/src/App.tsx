@@ -1,12 +1,14 @@
 import React from 'react';
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { MemeDetailPage } from './pages/MemeDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { UploadPage } from './pages/UploadPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { getCognitoLoginUrl, getCognitoSignupUrl, useAuth } from './auth';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { useAuth } from './auth';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token } = useAuth();
@@ -17,49 +19,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 export const App: React.FC = () => {
-  const { token, setToken } = useAuth();
+  const { token } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-slate-800 px-4 py-3 flex items-center justify-between bg-slate-900">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-lg tracking-tight">Meme Marketplace</span>
-          <nav className="flex gap-3 text-sm text-slate-300">
-            <Link to="/" className="hover:text-emerald-400">Home</Link>
-            <Link to="/dashboard" className="hover:text-emerald-400">Dashboard</Link>
-            <Link to="/upload" className="hover:text-emerald-400">Upload</Link>
-            <Link to="/register" className="hover:text-emerald-400">Register</Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-3">
-          {token ? (
-            <>
-              <span className="text-xs text-slate-300 hidden sm:inline">Logged in</span>
-              <button
-                onClick={() => setToken(null)}
-                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs border border-slate-600"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <div className="flex items-center gap-2">
-              <a
-                href={getCognitoSignupUrl()}
-                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs border border-slate-600"
-              >
-                Register
-              </a>
-              <a
-                href={getCognitoLoginUrl()}
-                className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-medium"
-              >
-                Login
-              </a>
-            </div>
-          )}
-        </div>
-      </header>
+      <Header />
 
       <main className="flex-1 px-4 py-6 max-w-4xl mx-auto w-full">
         <Routes>
@@ -85,6 +49,8 @@ export const App: React.FC = () => {
           />
         </Routes>
       </main>
+
+      <Footer />
     </div>
   );
 };
