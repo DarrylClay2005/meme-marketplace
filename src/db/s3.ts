@@ -10,7 +10,9 @@ export async function getUploadUrl(key: string, contentType: string): Promise<st
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
-    ContentType: contentType
+    ContentType: contentType,
+    // Make uploaded meme images publicly readable so the frontend can display them
+    ACL: 'public-read'
   });
 
   return await getSignedUrl(s3Client, command, { expiresIn: 300 });

@@ -34,6 +34,17 @@ export async function likeMeme(id: string, token: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to like meme');
 }
 
+export async function buyMeme(id: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/${id}/buy`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!res.ok) throw new Error('Failed to buy meme');
+}
+
 export async function getUploadUrl(contentType: string, token: string): Promise<{ key: string; uploadUrl: string }> {
   const res = await fetch(`${API_BASE_URL}/api/upload/url`, {
     method: 'POST',

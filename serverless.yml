@@ -68,6 +68,27 @@ resources:
               AllowedMethods: ['GET', 'PUT']
               AllowedOrigins: ['*']
               MaxAge: 3000
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+
+    MemeImageBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: MemeImageBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: AllowPublicReadForImages
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - s3:GetObject
+              Resource:
+                - arn:aws:s3:::${self:provider.environment.MEME_BUCKET_NAME}/*
 
     MemeUserPool:
       Type: AWS::Cognito::UserPool

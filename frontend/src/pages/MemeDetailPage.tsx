@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Meme, fetchMeme, likeMeme } from '../api';
+import { Meme, fetchMeme, likeMeme, buyMeme } from '../api';
 import { useAuth } from '../auth';
 
 export const MemeDetailPage: React.FC = () => {
@@ -27,11 +27,26 @@ export const MemeDetailPage: React.FC = () => {
     setMeme((m) => (m ? { ...m, likes: m.likes + 1 } : m));
   };
 
+  const handleBuy = async () => {
+    if (!token || !id) {
+      alert('You must be logged in to buy memes');
+      return;
+    }
+    try {
+      await buyMeme(id, token);
+      alert('Purchase recorded! (demo only, no real payment processed)');
+    } catch (err: any) {
+      console.error('buy failed', err);
+      alert(`Failed to buy meme: ${err?.message ?? 'Unknown error'}`);
+    }
+  };
+
   if (loading) return <p className="text-sm text-slate-300">Loading meme...</p>;
   if (error) return <p className="text-sm text-red-400">Error loading meme: {error}</p>;
   if (!meme) return <p className="text-sm text-slate-300">Meme not found.</p>;
 
   const likeDisabled = !token;
+  const buyDisabled = !token;
 
   return (
     <div className="space-y-4">
@@ -44,17 +59,30 @@ export const MemeDetailPage: React.FC = () => {
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="text-lg font-semibold">${meme.price.toFixed(2)}</span>
-          <button
-            onClick={handleLike}
-            disabled={likeDisabled}
-            className={`px-3 py-1 rounded text-sm ${
-              likeDisabled
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                : 'bg-emerald-600 hover:bg-emerald-500'
-            }`}
-          >
-            {likeDisabled ? 'Login to like' : 'Like'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleLike}
+              disabled={likeDisabled}
+              className={`px-3 py-1 rounded text-sm ${
+                likeDisabled
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-500'
+              }`}
+            >
+              {likeDisabled ? 'Login to like' : 'Like'}
+            </button>
+            <button
+              onClick={handleBuy}
+              disabled={buyDisabled}
+              className={`px-3 py-1 rounded text-sm ${
+                buyDisabled
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-500'
+              }`}
+            >
+              {buyDisabled ? 'Login to buy' : 'Buy'}
+            </button>
+          </div>
         </div>
       </div>
       {meme.tags?.length ? (
