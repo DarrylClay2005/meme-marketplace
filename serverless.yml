@@ -80,3 +80,12 @@ resources:
           - http://localhost:5173/auth/callback
         LogoutURLs:
           - http://localhost:5173/
+
+    MemeUserPoolDomain:
+      Type: AWS::Cognito::UserPoolDomain
+      Properties:
+        # If this domain is already taken in your AWS account/region,
+        # update the string below and redeploy.
+        Domain: meme-marketplace-dev-darrylclay
+        UserPoolId:
+          Ref: MemeUserPool
