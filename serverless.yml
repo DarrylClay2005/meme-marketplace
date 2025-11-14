@@ -19,6 +19,13 @@ provider:
         - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MEME_TABLE_NAME}
     - Effect: Allow
       Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Query
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MEME_LIKES_TABLE_NAME}
+    - Effect: Allow
+      Action:
         - s3:PutObject
         - s3:GetObject
       Resource:
@@ -27,6 +34,7 @@ provider:
     NODE_ENV: production
     REGION: ${self:provider.region}
     MEME_TABLE_NAME: ${self:service}-${self:provider.stage}-memes
+    MEME_LIKES_TABLE_NAME: ${self:service}-${self:provider.stage}-likes
     MEME_BUCKET_NAME: ${self:service}-${self:provider.stage}-images
     COGNITO_USER_POOL_ID:
       Ref: MemeUserPool
@@ -56,6 +64,22 @@ resources:
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    MemeLikesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MEME_LIKES_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: memeId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: memeId
+            KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
 
     MemeImageBucket:

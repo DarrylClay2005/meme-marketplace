@@ -70,3 +70,13 @@ export async function createMeme(params: { title: string; key: string; tags: str
   if (!res.ok) throw new Error('Failed to create meme');
   return res.json();
 }
+
+export async function fetchLikedMemes(token: string): Promise<Meme[]> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/me/liked`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error('Failed to load liked memes');
+  return res.json();
+}

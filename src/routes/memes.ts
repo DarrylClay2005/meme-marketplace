@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes } from '../db/dynamodb';
+import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes } from '../db/dynamodb';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getPublicUrl } from '../db/s3';
 import { PrismaClient } from '@prisma/client';
@@ -25,6 +25,16 @@ memeRoutes.get('/', async (req, res) => {
   } catch (error) {
     console.error('[memes] failed to list memes', error);
     res.status(500).json({ error: 'Failed to load memes' });
+  }
+});
+
+memeRoutes.get('/me/liked', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const memes = await getUserLikedMemes(req.user!.sub);
+    res.json(memes);
+  } catch (error) {
+    console.error('[memes] failed to get liked memes for user', { userId: req.user!.sub, error });
+    res.status(500).json({ error: 'Failed to load liked memes' });
   }
 });
 
@@ -75,7 +85,15 @@ memeRoutes.post('/', requireAuth, async (req: AuthRequest, res) => {
 
 memeRoutes.post('/:id/like', requireAuth, async (req: AuthRequest, res) => {
   try {
-    await incrementLikes(req.params.id);
+    const memeId = req.params.id;
+    const userId = req.user!.sub;
+
+    // Only increment the like count if this user hasn't liked this meme before
+    const created = await recordUserLike(userId, memeId);
+    if (created) {
+      await incrementLikes(memeId);
+    }
+
     res.json({ ok: true });
   } catch (error) {
     console.error('[memes] failed to like meme', { id: req.params.id, error });

@@ -1,18 +1,56 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Meme, fetchLikedMemes } from '../api';
+import { MemeCard } from '../components/MemeCard';
+import { useAuth } from '../auth';
 
 export const DashboardPage: React.FC = () => {
+  const { token } = useAuth();
+  const [memes, setMemes] = useState<Meme[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+
+    fetchLikedMemes(token)
+      .then(setMemes)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Your Liked Memes</h1>
+        <p className="text-sm text-slate-300">Loading memes you have liked...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Your Liked Memes</h1>
+        <p className="text-sm text-red-400">Error loading liked memes: {error}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-2">
-      <h1 className="text-2xl font-semibold">Your Dashboard</h1>
-      <p className="text-sm text-slate-300">
-        For this capstone, the dashboard is intentionally simple: once you are logged in,
-        you can upload new memes and like memes. Purchases are stored in a separate
-        Prisma/SQLite table on the backend.
-      </p>
-      <p className="text-sm text-slate-300">
-        You can extend this later to show your own uploaded memes and purchase history by
-        adding new API endpoints and calling them here.
-      </p>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-semibold">Your Liked Memes</h1>
+      {memes.length === 0 ? (
+        <p className="text-sm text-slate-300">
+          You haven't liked any memes yet. Browse the home page and hit the <span className="font-semibold">Like</span>{' '}
+          button on memes you enjoy.
+        </p>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {memes.map((meme) => (
+            <MemeCard key={meme.id} meme={meme} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

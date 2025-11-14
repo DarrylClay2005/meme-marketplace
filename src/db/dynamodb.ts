@@ -1,8 +1,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, UpdateCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, UpdateCommand, BatchWriteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
 const region = process.env.REGION || 'us-east-1';
 const tableName = process.env.MEME_TABLE_NAME || 'meme-marketplace-api-dev-memes';
+const likesTableName = process.env.MEME_LIKES_TABLE_NAME || 'meme-marketplace-api-dev-likes';
 
 const client = new DynamoDBClient({ region });
 export const docClient = DynamoDBDocumentClient.from(client);
@@ -133,4 +134,45 @@ export async function incrementLikes(id: string): Promise<void> {
       }
     })
   );
+}
+
+export async function recordUserLike(userId: string, memeId: string): Promise<boolean> {
+  try {
+    await docClient.send(
+      new PutCommand({
+        TableName: likesTableName,
+        Item: {
+          userId,
+          memeId,
+          createdAt: new Date().toISOString()
+        },
+        ConditionExpression: 'attribute_not_exists(memeId)'
+      })
+    );
+    return true;
+  } catch (err: any) {
+    if (err && err.name === 'ConditionalCheckFailedException') {
+      // User already liked this meme; not an error
+      return false;
+    }
+    throw err;
+  }
+}
+
+export async function getUserLikedMemes(userId: string): Promise<Meme[]> {
+  const likesResult = await docClient.send(
+    new QueryCommand({
+      TableName: likesTableName,
+      KeyConditionExpression: 'userId = :u',
+      ExpressionAttributeValues: {
+        ':u': userId
+      }
+    })
+  );
+
+  const likes = (likesResult.Items as { memeId: string }[] | undefined) ?? [];
+  if (!likes.length) return [];
+
+  const memes = await Promise.all(likes.map((like) => getMeme(like.memeId)));
+  return memes.filter((meme): meme is Meme => Boolean(meme));
 }
