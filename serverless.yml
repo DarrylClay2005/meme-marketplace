@@ -1,0 +1,82 @@
+service: meme-marketplace-api
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: dev
+  environment:
+    NODE_ENV: production
+    REGION: ${self:provider.region}
+    MEME_TABLE_NAME: ${self:service}-${self:provider.stage}-memes
+    MEME_BUCKET_NAME: ${self:service}-${self:provider.stage}-images
+    COGNITO_USER_POOL_ID:
+      Ref: MemeUserPool
+    COGNITO_CLIENT_ID:
+      Ref: MemeUserPoolClient
+
+functions:
+  api:
+    handler: src/handler.main
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+
+plugins:
+  - serverless-offline
+
+resources:
+  Resources:
+    MemeTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MEME_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    MemeImageBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.MEME_BUCKET_NAME}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders: ['*']
+              AllowedMethods: ['GET', 'PUT']
+              AllowedOrigins: ['*']
+              MaxAge: 3000
+
+    MemeUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: meme-marketplace-users
+        AutoVerifiedAttributes:
+          - email
+        UsernameAttributes:
+          - email
+
+    MemeUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: meme-marketplace-client
+        UserPoolId:
+          Ref: MemeUserPool
+        GenerateSecret: false
+        AllowedOAuthFlowsUserPoolClient: true
+        AllowedOAuthFlows:
+          - implicit
+        AllowedOAuthScopes:
+          - email
+          - openid
+          - profile
+        CallbackURLs:
+          - http://localhost:5173/auth/callback
+        LogoutURLs:
+          - http://localhost:5173/

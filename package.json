@@ -1,0 +1,42 @@
+{
+  "name": "meme-marketplace-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Serverless backend API for Meme Marketplace (Express + TypeScript + AWS)",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/local-server.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "deploy": "serverless deploy",
+    "sls:offline": "serverless offline"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.668.0",
+    "@aws-sdk/client-dynamodb": "^3.668.0",
+    "@aws-sdk/client-s3": "^3.668.0",
+    "@aws-sdk/lib-dynamodb": "^3.668.0",
+    "@prisma/client": "^5.16.1",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
+    "serverless-http": "^3.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.5.1",
+    "@types/supertest": "^2.0.16",
+    "eslint": "^9.10.0",
+    "prisma": "^5.16.1",
+    "serverless": "^4.0.0",
+    "serverless-offline": "^13.0.0",
+    "supertest": "^6.3.4",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.3"
+  }
+}
