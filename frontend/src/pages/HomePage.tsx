@@ -1,0 +1,44 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Meme, fetchMemes } from '../api';
+
+export const HomePage: React.FC = () => {
+  const [memes, setMemes] = useState<Meme[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMemes()
+      .then(setMemes)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p>Loading memes...</p>;
+  if (error) return <p className="text-red-400">Error: {error}</p>;
+
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-semibold">Latest Memes</h1>
+      <div className="grid gap-4 md:grid-cols-2">
+        {memes.map((meme) => (
+          <Link
+            key={meme.id}
+            to={`/memes/${meme.id}`}
+            className="border border-slate-800 rounded overflow-hidden hover:border-emerald-500 transition"
+          >
+            <img src={meme.imageUrl} alt={meme.title} className="w-full h-48 object-cover" />
+            <div className="p-3 flex justify-between items-center text-sm">
+              <div>
+                <p className="font-semibold truncate max-w-[12rem]">{meme.title}</p>
+                <p className="text-xs text-slate-400">Likes: {meme.likes}</p>
+              </div>
+              <span className="text-xs bg-slate-800 rounded px-2 py-1">${meme.price.toFixed(2)}</span>
+            </div>
+          </Link>
+        ))}
+        {memes.length === 0 && <p>No memes yet. Be the first to upload!</p>}
+      </div>
+    </div>
+  );
+};
