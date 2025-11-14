@@ -3,10 +3,8 @@ import { z } from 'zod';
 import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes } from '../db/dynamodb';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getPublicUrl } from '../db/s3';
-import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
-const prisma = new PrismaClient();
 export const memeRoutes = Router();
 
 export const MemeCreateSchema = z.object({
@@ -109,16 +107,12 @@ memeRoutes.post('/:id/buy', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
-    const purchase = await prisma.purchase.create({
-      data: {
-        memeId: meme.id,
-        userId: req.user!.sub
-      }
-    });
-
+    // For this capstone, we don't persist purchases in a real payment system.
+    // We simply acknowledge the purchase to keep the flow simple and demo-friendly.
     res.status(201).json({
-      message: 'Purchase recorded',
-      purchase
+      message: 'Purchase recorded (demo only, no real payment processed)',
+      memeId: meme.id,
+      userId: req.user!.sub
     });
   } catch (error) {
     console.error('[memes] failed to record purchase', { id: req.params.id, error });
