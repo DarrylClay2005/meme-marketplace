@@ -1,139 +1,91 @@
 # Meme Marketplace
 
-Full-stack capstone project: a simple meme marketplace where authenticated users can upload memes, browse/search the library, like memes, and perform basic "buy" actions.
+This is my full-stack capstone project. I built a small meme marketplace where I can:
 
-This repo contains:
-- **Backend**: Node.js, TypeScript, Express, Serverless Framework, AWS (S3, DynamoDB, Cognito), Prisma (SQLite for a small purchase-history model).
-- **Frontend**: React, TypeScript, Tailwind CSS single-page application.
+- Upload meme images.
+- Browse a shared meme feed.
+- Like memes.
+- Do a demo “buy” action that increments a purchased count (no real payments).
+- See a dashboard of only the memes I’ve liked.
 
-Region: `us-east-1`.
+## Live URLs
 
-> Note: AWS credentials are configured in the underlying system; deploy steps will assume an authenticated AWS CLI in that environment.
+- Frontend (Vercel): https://meme-marketplace-lac.vercel.app/
+- Backend API (API Gateway): https://94whf4566l.execute-api.us-east-1.amazonaws.com
 
----
+## What I used
 
-## Architecture overview
+**Backend**
+- Node.js, TypeScript, Express.
+- Serverless Framework → AWS Lambda + HTTP API (API Gateway).
+- DynamoDB (memes table + per-user likes table).
+- S3 for meme image storage with pre-signed upload URLs.
+- Cognito User Pool for authentication (Hosted UI + JWT access tokens).
 
-**Backend (serverless API)**
-- Express app wrapped with `serverless-http` and deployed to **AWS Lambda + API Gateway** via Serverless Framework.
-- **DynamoDB** table stores meme documents (id, title, imageUrl, tags, likes, price, uploadedBy, createdAt).
-- **S3** bucket stores meme image files, uploaded via **pre-signed URLs** exposed by the API.
-- **Cognito User Pool** issues JWT access tokens; the API verifies them with `jwks-rsa` and `jsonwebtoken`.
-- **Prisma + SQLite** store a simple `Purchase` table so you can demonstrate relational data and Prisma queries.
+**Frontend**
+- React + TypeScript + Vite.
+- Tailwind CSS.
+- React Router for SPA routing.
 
-**Frontend (React SPA)**
-- Vite + React + TypeScript + Tailwind CSS single-page app.
-- Uses a small `api.ts` client to call the backend endpoints.
-- Uses localStorage to hold the Cognito `access_token` and attaches it as `Authorization: Bearer <token>` to protected requests.
+## Main features
 
----
+- **Home page**
+  - Loads memes from `GET /api/memes`.
+  - Shows likes and bought counts for each meme card.
 
-## API routes (backend)
+- **Meme detail page**
+  - Shows a large meme image, title, price, likes, and bought count.
+  - If I’m signed in, I can Like and Buy.
+  - If I’m not signed in and I try Like/Buy, I see: “You can't use this function yet, Sign In!”.
 
-Base URL examples:
-- **Local dev** (Express): `http://localhost:4000`
-- **Deployed** (API Gateway): `https://<api-id>.execute-api.us-east-1.amazonaws.com/dev`
+- **Upload page (protected)**
+  - I can choose an image, set title/price/tags.
+  - The frontend asks the backend for a pre-signed S3 URL, uploads the file to S3, then creates the meme record in DynamoDB.
 
-**Public**
-- `GET /health` – Health check; returns `{ "status": "ok" }`.
-- `GET /api/memes` – List all memes from DynamoDB.
-- `GET /api/memes/:id` – Get a single meme document by id.
+- **Dashboard page (protected)**
+  - Shows only the memes I’ve liked, using `GET /api/memes/me/liked`.
 
-**Protected (requires `Authorization: Bearer <access_token>` from Cognito)**
-- `POST /api/upload/url`
-  - Body: `{ "contentType": "image/png" }`.
-  - Returns: `{ "key": "<s3-key>", "uploadUrl": "https://..." }`.
-  - Client uploads the image directly to S3 using the `uploadUrl`.
-- `POST /api/memes`
-  - Body: `{ "title": string, "key": string, "tags": string[], "price": number }`.
-  - Uses `key` to build a public S3 image URL, then writes the meme to DynamoDB.
-- `POST /api/memes/:id/like`
-  - Increments the meme's `likes` counter using a DynamoDB update expression.
-- `POST /api/memes/:id/buy`
-  - Creates a `Purchase` record in the Prisma/SQLite database linking the current user to the meme.
+## How I run it locally
 
----
-
-## Local development
-
-### Backend (Express + Serverless)
-
-From the repo root:
+Backend (from repo root):
 
 ```bash
 npm install
-npx prisma generate
-npm run dev
+npx prisma generate   # only needed once; Prisma schema is optional for this demo
+npm run dev           # Express on http://localhost:4000
 ```
 
-- This starts the Express app on `http://localhost:4000` using `src/local-server.ts`.
-- For routes that touch DynamoDB/S3/Cognito, you need valid AWS credentials and environment variables available (see **Environment variables** below).
-
-### Frontend (React + Vite + Tailwind)
-
-From the `frontend` folder:
+Frontend (from `frontend`):
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev           # Vite dev server on http://localhost:5173
 ```
 
-- The app runs on `http://localhost:5173`.
-- By default it calls the backend at `VITE_API_BASE_URL` (configured in `.env.local`).
+For local auth/API calls I set `VITE_API_BASE_URL` to my local backend and use a Cognito user from my AWS account.
 
----
+## How I deploy
 
-## Environment variables
-
-### Backend
-
-Most variables are provided automatically by Serverless in AWS. For local development, set them in your shell before running `npm run dev`:
-
-- `REGION` – AWS region (default: `us-east-1`).
-- `MEME_TABLE_NAME` – DynamoDB table name for memes (should match `serverless.yml`).
-- `MEME_BUCKET_NAME` – S3 bucket for meme images (should match `serverless.yml`).
-- `COGNITO_USER_POOL_ID` – ID of the Cognito User Pool.
-- `COGNITO_CLIENT_ID` – ID of the Cognito User Pool Client.
-
-### Frontend (Vite)
-
-Create `frontend/.env.local` and set:
+Backend:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:4000
-VITE_COGNITO_REGION=us-east-1
-VITE_COGNITO_CLIENT_ID=<your-cognito-client-id>
-VITE_COGNITO_DOMAIN=<your-cognito-domain-prefix>
-VITE_COGNITO_REDIRECT_URI=http://localhost:5173/auth/callback
+npm run build
+npm run deploy
 ```
 
-- `VITE_COGNITO_DOMAIN` is the domain prefix you configure for the Cognito Hosted UI.
+- Builds TypeScript and uses `serverless deploy` to push to AWS.
 
----
-
-## Testing
-
-### Backend
-
-```bash
-npm test
-```
-
-- Runs Vitest tests such as:
-  - `src/app.test.ts` – verifies `/health` endpoint.
-  - `src/memes.schema.test.ts` – verifies meme creation validation schema.
-
-### Frontend
+Frontend:
 
 ```bash
 cd frontend
-npm test
+npm run build
 ```
 
-- Runs Vitest with a simple smoke test (`src/App.test.tsx`). You can extend this with React Testing Library if desired.
+- Vercel is connected to this GitHub repo and automatically builds/deploys the frontend.
 
----
+I keep secrets (AWS credentials, Cognito client secrets, etc.) out of this repo and configure them only in my local shell or in the hosting dashboards.
 
 ## Deployment overview
 
@@ -152,7 +104,7 @@ npm run deploy
   - HTTP API (API Gateway).
   - DynamoDB table, S3 bucket, and Cognito User Pool + Client.
 
-### Frontend (S3/CloudFront, Vercel, or Netlify)
+### Frontend (Vercel)
 
 From `frontend`:
 
@@ -162,9 +114,17 @@ npm run build
 ```
 
 - This produces a static bundle in `frontend/dist`.
-- Options:
-  - Upload `dist` to an S3 bucket and put CloudFront in front.
-  - Or deploy `dist` with Vercel/Netlify.
-- Make sure `VITE_API_BASE_URL` points at your deployed API Gateway URL, and that the Cognito callback/redirect URIs match your deployed frontend URL.
+- The GitHub repo is connected to Vercel, which automatically builds and deploys the frontend to:
+  - https://meme-marketplace-lac.vercel.app/
+- Make sure `VITE_API_BASE_URL` points at your deployed API Gateway URL (`https://94whf4566l.execute-api.us-east-1.amazonaws.com`), and that the Cognito callback/redirect URIs match your deployed frontend URL.
 
 ---
+
+## Screenshots / Demo
+
+Add screenshots or a short demo video to this section to show the main features:
+
+- **Home page** listing starter memes and any user-uploaded memes.
+- **Meme detail** page showing the image, likes and bought counts, and Like/Buy buttons.
+- **Upload** page showing the S3 pre-signed URL flow.
+- **Dashboard** showing only memes you have liked.
