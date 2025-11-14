@@ -91,8 +91,7 @@ I keep secrets (AWS credentials, Cognito client secrets, etc.) out of this repo 
 
 ### Backend (Serverless)
 
-1. Ensure your AWS CLI is authenticated and using `us-east-1`.
-2. From the repo root, deploy:
+From the repo root, deploy:
 
 ```bash
 npm run build
