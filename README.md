@@ -11,7 +11,6 @@ This is my full-stack capstone project. I built a small meme marketplace where I
 ## Live URLs
 
 - Frontend (Vercel): https://meme-marketplace-lac.vercel.app/
-- Backend API (API Gateway): https://94whf4566l.execute-api.us-east-1.amazonaws.com
 
 ## What I used
 
