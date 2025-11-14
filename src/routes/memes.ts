@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createMeme, getMeme, listMemes, incrementLikes } from '../db/dynamodb';
+import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes } from '../db/dynamodb';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getPublicUrl } from '../db/s3';
 import { PrismaClient } from '@prisma/client';
@@ -18,6 +18,8 @@ export const MemeCreateSchema = z.object({
 
 memeRoutes.get('/', async (req, res) => {
   try {
+    // Ensure we have some starter memes the first time the API is called
+    await ensureStarterMemes();
     const memes = await listMemes();
     res.json(memes);
   } catch (error) {

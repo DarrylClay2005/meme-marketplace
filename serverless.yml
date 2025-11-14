@@ -91,6 +91,8 @@ resources:
           - email
           - openid
           - profile
+        SupportedIdentityProviders:
+          - COGNITO
         CallbackURLs:
           - http://localhost:5173/auth/callback
           - https://meme-marketplace-lac.vercel.app/auth/callback
