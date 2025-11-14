@@ -166,3 +166,44 @@ npm run build
   - Upload `dist` to an S3 bucket and put CloudFront in front.
   - Or deploy `dist` with Vercel/Netlify.
 - Make sure `VITE_API_BASE_URL` points at your deployed API Gateway URL, and that the Cognito callback/redirect URIs match your deployed frontend URL.
+
+---
+
+## How to demo / present the app
+
+You can use these steps when you explain the project:
+
+1. **High-level overview**
+   - Explain that this is a full-stack meme marketplace.
+   - Backend: serverless Express API on AWS (Lambda + API Gateway + DynamoDB + S3 + Cognito + Prisma/SQLite).
+   - Frontend: React + Tailwind SPA that talks to the API and uses Cognito login.
+
+2. **Authentication flow (Cognito)**
+   - Show the login button in the top-right ("Login with Cognito").
+   - Click it to open the Cognito Hosted UI, sign in (or sign up), and let it redirect back to `/auth/callback`.
+   - Explain that the frontend reads the `access_token` from the URL hash and stores it in localStorage.
+   - Mention that all protected API calls send `Authorization: Bearer <access_token>`.
+
+3. **Browsing memes**
+   - On the Home page, show the list of memes loaded from `GET /api/memes` (DynamoDB).
+   - Click a meme to navigate to `/memes/:id` and show details (image, price, likes, tags).
+
+4. **Uploading a meme**
+   - Go to the Upload page (protected route).
+   - Pick an image file, enter title/price/tags.
+   - Walk through the flow:
+     - Frontend calls `POST /api/upload/url` to get a pre-signed S3 URL and key.
+     - Frontend uploads the actual image file directly to S3 with a `PUT` request.
+     - Frontend calls `POST /api/memes` with the S3 key, and the backend writes the meme document into DynamoDB.
+   - Return to Home and show the new meme in the list.
+
+5. **Likes and purchases**
+   - On the meme detail page, click **Like**.
+   - Explain that this calls `POST /api/memes/:id/like` which runs a DynamoDB update expression to increment the `likes` counter.
+   - Mention that `POST /api/memes/:id/buy` records a `Purchase` row via Prisma/SQLite, demonstrating relational data usage.
+
+6. **Testing and quality**
+   - Mention that you have automated tests:
+     - Backend Vitest tests for the health endpoint and meme validation schema.
+     - Frontend Vitest smoke test (and it can be extended later).
+   - Show the commands `npm test` and `cd frontend && npm test`.
