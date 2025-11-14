@@ -5,7 +5,8 @@ import { MemeDetailPage } from './pages/MemeDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { UploadPage } from './pages/UploadPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
-import { getCognitoLoginUrl, useAuth } from './auth';
+import { RegisterPage } from './pages/RegisterPage';
+import { getCognitoLoginUrl, getCognitoSignupUrl, useAuth } from './auth';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token } = useAuth();
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
             <Link to="/" className="hover:text-emerald-400">Home</Link>
             <Link to="/dashboard" className="hover:text-emerald-400">Dashboard</Link>
             <Link to="/upload" className="hover:text-emerald-400">Upload</Link>
+            <Link to="/register" className="hover:text-emerald-400">Register</Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
@@ -41,12 +43,20 @@ export const App: React.FC = () => {
               </button>
             </>
           ) : (
-            <a
-              href={getCognitoLoginUrl()}
-              className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-medium"
-            >
-              Login with Cognito
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={getCognitoSignupUrl()}
+                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs border border-slate-600"
+              >
+                Register
+              </a>
+              <a
+                href={getCognitoLoginUrl()}
+                className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-medium"
+              >
+                Login
+              </a>
+            </div>
           )}
         </div>
       </header>
@@ -56,6 +66,7 @@ export const App: React.FC = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/memes/:id" element={<MemeDetailPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/dashboard"
             element={

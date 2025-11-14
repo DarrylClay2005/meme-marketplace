@@ -44,6 +44,16 @@ export function getCognitoLoginUrl(): string {
   const domain = import.meta.env.VITE_COGNITO_DOMAIN || '';
   const redirectUri = encodeURIComponent(import.meta.env.VITE_COGNITO_REDIRECT_URI || 'http://localhost:5173/auth/callback');
 
-  // This constructs the hosted UI URL. You will set domain + client ID in .env when deploying.
+  // Hosted UI login (sign-in). The page also includes a sign-up link.
   return `https://${domain}.auth.${region}.amazoncognito.com/login?client_id=${clientId}&response_type=token&scope=openid+email+profile&redirect_uri=${redirectUri}`;
+}
+
+export function getCognitoSignupUrl(): string {
+  const region = import.meta.env.VITE_COGNITO_REGION || 'us-east-1';
+  const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
+  const domain = import.meta.env.VITE_COGNITO_DOMAIN || '';
+  const redirectUri = encodeURIComponent(import.meta.env.VITE_COGNITO_REDIRECT_URI || 'http://localhost:5173/auth/callback');
+
+  // Same hosted UI, but with screen_hint=signup so the sign-up form is shown first.
+  return `https://${domain}.auth.${region}.amazoncognito.com/login?client_id=${clientId}&response_type=token&scope=openid+email+profile&redirect_uri=${redirectUri}&screen_hint=signup`;
 }
