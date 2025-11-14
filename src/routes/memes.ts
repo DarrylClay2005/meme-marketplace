@@ -17,17 +17,27 @@ export const MemeCreateSchema = z.object({
 });
 
 memeRoutes.get('/', async (req, res) => {
-  const memes = await listMemes();
-  res.json(memes);
+  try {
+    const memes = await listMemes();
+    res.json(memes);
+  } catch (error) {
+    console.error('[memes] failed to list memes', error);
+    res.status(500).json({ error: 'Failed to load memes' });
+  }
 });
 
 memeRoutes.get('/:id', async (req, res) => {
-  const meme = await getMeme(req.params.id);
-  if (!meme) {
-    res.status(404).json({ error: 'Meme not found' });
-    return;
+  try {
+    const meme = await getMeme(req.params.id);
+    if (!meme) {
+      res.status(404).json({ error: 'Meme not found' });
+      return;
+    }
+    res.json(meme);
+  } catch (error) {
+    console.error('[memes] failed to get meme', { id: req.params.id, error });
+    res.status(500).json({ error: 'Failed to load meme' });
   }
-  res.json(meme);
 });
 
 memeRoutes.post('/', requireAuth, async (req: AuthRequest, res) => {
@@ -37,46 +47,61 @@ memeRoutes.post('/', requireAuth, async (req: AuthRequest, res) => {
     return;
   }
 
-  const { title, key, tags, price } = parseResult.data;
-  const id = randomUUID();
-  const now = new Date().toISOString();
+  try {
+    const { title, key, tags, price } = parseResult.data;
+    const id = randomUUID();
+    const now = new Date().toISOString();
 
-  const meme = {
-    id,
-    title,
-    imageUrl: getPublicUrl(key),
-    tags,
-    price,
-    uploadedBy: req.user!.sub,
-    likes: 0,
-    createdAt: now
-  };
+    const meme = {
+      id,
+      title,
+      imageUrl: getPublicUrl(key),
+      tags,
+      price,
+      uploadedBy: req.user!.sub,
+      likes: 0,
+      createdAt: now
+    };
 
-  await createMeme(meme);
-  res.status(201).json(meme);
+    await createMeme(meme);
+    res.status(201).json(meme);
+  } catch (error) {
+    console.error('[memes] failed to create meme', { body: req.body, error });
+    res.status(500).json({ error: 'Failed to create meme' });
+  }
 });
 
 memeRoutes.post('/:id/like', requireAuth, async (req: AuthRequest, res) => {
-  await incrementLikes(req.params.id);
-  res.json({ ok: true });
+  try {
+    await incrementLikes(req.params.id);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('[memes] failed to like meme', { id: req.params.id, error });
+    res.status(500).json({ error: 'Failed to like meme' });
+  }
 });
 
 memeRoutes.post('/:id/buy', requireAuth, async (req: AuthRequest, res) => {
-  const meme = await getMeme(req.params.id);
-  if (!meme) {
-    res.status(404).json({ error: 'Meme not found' });
-    return;
-  }
-
-  const purchase = await prisma.purchase.create({
-    data: {
-      memeId: meme.id,
-      userId: req.user!.sub
+  try {
+    const meme = await getMeme(req.params.id);
+    if (!meme) {
+      res.status(404).json({ error: 'Meme not found' });
+      return;
     }
-  });
 
-  res.status(201).json({
-    message: 'Purchase recorded',
-    purchase
-  });
+    const purchase = await prisma.purchase.create({
+      data: {
+        memeId: meme.id,
+        userId: req.user!.sub
+      }
+    });
+
+    res.status(201).json({
+      message: 'Purchase recorded',
+      purchase
+    });
+  } catch (error) {
+    console.error('[memes] failed to record purchase', { id: req.params.id, error });
+    res.status(500).json({ error: 'Failed to record purchase' });
+  }
 });
