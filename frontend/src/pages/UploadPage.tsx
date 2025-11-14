@@ -9,6 +9,7 @@ export const UploadPage: React.FC = () => {
   const [tags, setTags] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,20 +22,22 @@ export const UploadPage: React.FC = () => {
       return;
     }
 
-    setStatus('Requesting upload URL...');
-    const { key, uploadUrl } = await getUploadUrl(file.type, token);
+    try {
+      setSubmitting(true);
+      setStatus('Requesting upload URL...');
+      const { key, uploadUrl } = await getUploadUrl(file.type, token);
 
-    setStatus('Uploading to S3...');
-    await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': file.type
-      },
-      body: file
-    });
+      setStatus('Uploading to S3...');
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type
+        },
+        body: file
+      });
 
-    setStatus('Creating meme record...');
-    const meme = await createMeme(
+      setStatus('Creating meme record...');
+      const meme = await createMeme(
       {
         title,
         key,
@@ -52,11 +55,21 @@ export const UploadPage: React.FC = () => {
     setPrice(0);
     setTags('');
     setFile(null);
+  } catch (error: any) {
+    console.error('upload failed', error);
+    setStatus(`Upload failed: ${error?.message ?? 'Unknown error'}`);
+  } finally {
+    setSubmitting(false);
+  }
   };
 
   return (
     <div className="space-y-4 max-w-lg">
       <h1 className="text-2xl font-semibold">Upload a Meme</h1>
+      <p className="text-sm text-slate-300">
+        This form talks to the backend API to generate a pre-signed S3 URL and then creates a
+        meme record in DynamoDB.
+      </p>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label className="block text-sm mb-1">Title</label>
@@ -97,9 +110,12 @@ export const UploadPage: React.FC = () => {
         </div>
         <button
           type="submit"
-          className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-sm"
+          disabled={submitting}
+          className={`px-4 py-2 rounded text-sm ${
+            submitting ? 'bg-slate-700 text-slate-400 cursor-wait' : 'bg-emerald-600 hover:bg-emerald-500'
+          }`}
         >
-          Upload
+          {submitting ? 'Uploading...' : 'Upload'}
         </button>
       </form>
       {status && <p className="text-sm text-slate-300">{status}</p>}

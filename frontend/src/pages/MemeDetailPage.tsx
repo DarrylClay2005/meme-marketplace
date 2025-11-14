@@ -27,9 +27,11 @@ export const MemeDetailPage: React.FC = () => {
     setMeme((m) => (m ? { ...m, likes: m.likes + 1 } : m));
   };
 
-  if (loading) return <p>Loading meme...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
-  if (!meme) return <p>Meme not found.</p>;
+  if (loading) return <p className="text-sm text-slate-300">Loading meme...</p>;
+  if (error) return <p className="text-sm text-red-400">Error loading meme: {error}</p>;
+  if (!meme) return <p className="text-sm text-slate-300">Meme not found.</p>;
+
+  const likeDisabled = !token;
 
   return (
     <div className="space-y-4">
@@ -44,9 +46,14 @@ export const MemeDetailPage: React.FC = () => {
           <span className="text-lg font-semibold">${meme.price.toFixed(2)}</span>
           <button
             onClick={handleLike}
-            className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-sm"
+            disabled={likeDisabled}
+            className={`px-3 py-1 rounded text-sm ${
+              likeDisabled
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-500'
+            }`}
           >
-            Like
+            {likeDisabled ? 'Login to like' : 'Like'}
           </button>
         </div>
       </div>

@@ -14,8 +14,24 @@ export const HomePage: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p>Loading memes...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold">Latest Memes</h1>
+        <p className="text-sm text-slate-400">Loading memes from the API...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Latest Memes</h1>
+        <p className="text-sm text-red-400">Error loading memes: {error}</p>
+        <p className="text-xs text-slate-400">Make sure the backend is running and `VITE_API_BASE_URL` is set correctly.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -37,7 +53,11 @@ export const HomePage: React.FC = () => {
             </div>
           </Link>
         ))}
-        {memes.length === 0 && <p>No memes yet. Be the first to upload!</p>}
+        {memes.length === 0 && (
+          <p className="col-span-full text-sm text-slate-400">
+            No memes yet. Once you log in, go to <span className="font-semibold">Upload</span> to add the first one.
+          </p>
+        )}
       </div>
     </div>
   );
