@@ -9,7 +9,7 @@
     "test": "vitest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
-    "deploy": "serverless deploy",
+    "deploy": "npm run build && serverless deploy",
     "sls:offline": "serverless offline"
   },
   "dependencies": {

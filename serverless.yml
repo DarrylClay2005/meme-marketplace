@@ -7,6 +7,21 @@ provider:
   runtime: nodejs20.x
   region: us-east-1
   stage: dev
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Scan
+        - dynamodb:UpdateItem
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MEME_TABLE_NAME}
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+      Resource:
+        - arn:aws:s3:::${self:provider.environment.MEME_BUCKET_NAME}/*
   environment:
     NODE_ENV: production
     REGION: ${self:provider.region}
@@ -19,7 +34,7 @@ provider:
 
 functions:
   api:
-    handler: src/handler.main
+    handler: dist/handler.main
     events:
       - httpApi:
           path: /{proxy+}
@@ -78,8 +93,10 @@ resources:
           - profile
         CallbackURLs:
           - http://localhost:5173/auth/callback
+          - https://meme-marketplace-lac.vercel.app/auth/callback
         LogoutURLs:
           - http://localhost:5173/
+          - https://meme-marketplace-lac.vercel.app/
 
     MemeUserPoolDomain:
       Type: AWS::Cognito::UserPoolDomain
