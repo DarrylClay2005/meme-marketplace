@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 const prisma = new PrismaClient();
 export const memeRoutes = Router();
 
-const MemeCreateSchema = z.object({
+export const MemeCreateSchema = z.object({
   title: z.string().min(1),
   key: z.string().min(1),
   tags: z.array(z.string()).default([]),
