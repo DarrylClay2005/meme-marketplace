@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes } from '../db/dynamodb';
+import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes, incrementPurchases } from '../db/dynamodb';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getPublicUrl } from '../db/s3';
 import { randomUUID } from 'crypto';
@@ -70,6 +70,7 @@ memeRoutes.post('/', requireAuth, async (req: AuthRequest, res) => {
       price,
       uploadedBy: req.user!.sub,
       likes: 0,
+      purchases: 0,
       createdAt: now
     };
 
@@ -106,6 +107,9 @@ memeRoutes.post('/:id/buy', requireAuth, async (req: AuthRequest, res) => {
       res.status(404).json({ error: 'Meme not found' });
       return;
     }
+
+    // Increment the purchases counter for this meme
+    await incrementPurchases(meme.id);
 
     // For this capstone, we don't persist purchases in a real payment system.
     // We simply acknowledge the purchase to keep the flow simple and demo-friendly.

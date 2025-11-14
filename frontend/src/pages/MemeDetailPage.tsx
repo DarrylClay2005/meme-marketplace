@@ -20,7 +20,7 @@ export const MemeDetailPage: React.FC = () => {
 
   const handleLike = async () => {
     if (!token || !id) {
-      alert('You must be logged in to like memes');
+      alert("You can't use this function yet, Sign In!");
       return;
     }
     await likeMeme(id, token);
@@ -29,7 +29,7 @@ export const MemeDetailPage: React.FC = () => {
 
   const handleBuy = async () => {
     if (!token || !id) {
-      alert('You must be logged in to buy memes');
+      alert("You can't use this function yet, Sign In!");
       return;
     }
     try {
@@ -56,6 +56,7 @@ export const MemeDetailPage: React.FC = () => {
           <h1 className="text-2xl font-semibold">{meme.title}</h1>
           <p className="text-sm text-slate-400">Uploaded: {new Date(meme.createdAt).toLocaleString()}</p>
           <p className="text-sm text-slate-400">Likes: {meme.likes}</p>
+          <p className="text-sm text-slate-400">Bought: {meme.purchases ?? 0}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="text-lg font-semibold">${meme.price.toFixed(2)}</span>

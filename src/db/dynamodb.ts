@@ -15,6 +15,7 @@ export interface Meme {
   tags: string[];
   uploadedBy: string;
   likes: number;
+  purchases: number;
   price: number;
   createdAt: string;
 }
@@ -29,6 +30,7 @@ const STARTER_MEMES: Meme[] = [
     tags: ['classic', 'relationship', 'reaction'],
     uploadedBy: 'system',
     likes: 0,
+    purchases: 0,
     price: 0,
     createdAt: new Date().toISOString()
   },
@@ -39,6 +41,7 @@ const STARTER_MEMES: Meme[] = [
     tags: ['drake', 'preference', 'reaction'],
     uploadedBy: 'system',
     likes: 0,
+    purchases: 0,
     price: 0,
     createdAt: new Date().toISOString()
   },
@@ -49,6 +52,7 @@ const STARTER_MEMES: Meme[] = [
     tags: ['doge', 'crypto', 'wow'],
     uploadedBy: 'system',
     likes: 0,
+    purchases: 0,
     price: 0,
     createdAt: new Date().toISOString()
   },
@@ -59,6 +63,7 @@ const STARTER_MEMES: Meme[] = [
     tags: ['lotr', 'classic'],
     uploadedBy: 'system',
     likes: 0,
+    purchases: 0,
     price: 0,
     createdAt: new Date().toISOString()
   },
@@ -69,6 +74,7 @@ const STARTER_MEMES: Meme[] = [
     tags: ['success', 'wholesome'],
     uploadedBy: 'system',
     likes: 0,
+    purchases: 0,
     price: 0,
     createdAt: new Date().toISOString()
   }
@@ -90,7 +96,16 @@ export async function getMeme(id: string): Promise<Meme | null> {
       Key: { id }
     })
   );
-  return (result.Item as Meme) || null;
+  if (!result.Item) return null;
+  const raw = result.Item as any;
+  const meme: Meme = {
+    purchases: 0,
+    ...raw
+  };
+  if (typeof meme.purchases !== 'number') {
+    meme.purchases = 0;
+  }
+  return meme;
 }
 
 export async function listMemes(): Promise<Meme[]> {
@@ -100,8 +115,17 @@ export async function listMemes(): Promise<Meme[]> {
     })
   );
 
-  const items = (result.Items as Meme[]) || [];
-  return items;
+  const items = (result.Items as any[]) || [];
+  return items.map((raw) => {
+    const meme: Meme = {
+      purchases: 0,
+      ...raw
+    };
+    if (typeof meme.purchases !== 'number') {
+      meme.purchases = 0;
+    }
+    return meme;
+  });
 }
 
 export async function ensureStarterMemes(): Promise<void> {
@@ -128,6 +152,20 @@ export async function incrementLikes(id: string): Promise<void> {
       TableName: tableName,
       Key: { id },
       UpdateExpression: 'SET likes = if_not_exists(likes, :zero) + :inc',
+      ExpressionAttributeValues: {
+        ':inc': 1,
+        ':zero': 0
+      }
+    })
+  );
+}
+
+export async function incrementPurchases(id: string): Promise<void> {
+  await docClient.send(
+    new UpdateCommand({
+      TableName: tableName,
+      Key: { id },
+      UpdateExpression: 'SET purchases = if_not_exists(purchases, :zero) + :inc',
       ExpressionAttributeValues: {
         ':inc': 1,
         ':zero': 0

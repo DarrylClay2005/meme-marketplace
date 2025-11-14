@@ -7,6 +7,7 @@ export interface Meme {
   tags: string[];
   price: number;
   likes: number;
+  purchases: number;
   uploadedBy: string;
   createdAt: string;
 }

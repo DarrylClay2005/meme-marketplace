@@ -13,6 +13,7 @@ import { useAuth } from './auth';
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token } = useAuth();
   if (!token) {
+    alert("You can't use this function yet, Sign In!");
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;
