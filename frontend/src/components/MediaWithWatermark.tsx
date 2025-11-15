@@ -28,7 +28,13 @@ export default function MediaWithWatermark({ src, alt, className, rounded = fals
     // Use <img> to preserve animation; overlay a visible corner watermark.
     return (
       <div className={["relative", className || '', rounded ? 'overflow-hidden rounded' : ''].join(' ').trim()} onContextMenu={(e)=>e.preventDefault()}>
-        <img src={src} alt={alt} className={[contain ? 'object-contain' : 'object-cover', 'w-full h-full'].join(' ')} draggable={false} />
+        <img
+          src={src}
+          alt={alt}
+          decoding="async"
+          className={[contain ? 'object-contain' : 'object-cover', 'absolute inset-0 w-full h-full'].join(' ')}
+          draggable={false}
+        />
         <div className="pointer-events-none select-none absolute bottom-2 right-2 text-[0.7rem] font-medium opacity-70 text-black bg-white/35 dark:text-white dark:bg-black/35 px-2 py-0.5 rounded">
           {watermark}
         </div>

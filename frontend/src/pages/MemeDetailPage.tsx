@@ -138,8 +138,8 @@ export const MemeDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="w-full max-h-[480px]">
-        <MediaWithWatermark src={meme.imageUrl} alt={meme.title} className="w-full max-h-[480px]" rounded contain mode="visible" />
+      <div className="w-full h-[480px]">
+        <MediaWithWatermark src={meme.imageUrl} alt={meme.title} className="w-full h-[480px]" rounded contain mode="visible" />
       </div>
       <div className="flex justify-between items-center">
         <div>
