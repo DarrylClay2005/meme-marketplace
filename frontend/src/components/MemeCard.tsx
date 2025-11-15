@@ -7,21 +7,40 @@ interface MemeCardProps {
 }
 
 export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
-  const handleDownload = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleDownload = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const link = document.createElement('a');
-    link.href = meme.imageUrl;
+    try {
+      const response = await fetch(meme.imageUrl);
+      if (!response.ok) {
+        throw new Error(`Download failed with status ${response.status}`);
+      }
 
-    const safeTitle = meme.title
-      ? meme.title.replace(/[^a-z0-9]+/gi, '_').toLowerCase()
-      : 'meme';
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
 
-    link.download = `${safeTitle}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const safeTitle = meme.title
+        ? meme.title.replace(/[^a-z0-9]+/gi, '_').toLowerCase()
+        : 'meme';
+
+      const contentType = response.headers.get('Content-Type') || '';
+      let ext = '.jpg';
+      if (contentType.includes('png')) ext = '.png';
+      else if (contentType.includes('gif')) ext = '.gif';
+      else if (contentType.includes('webp')) ext = '.webp';
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${safeTitle}${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('meme download failed', err);
+      alert('Failed to download meme image. Please try again.');
+    }
   };
 
   return (
