@@ -24,7 +24,26 @@ function shouldUseImgOverlay(src: string) {
 export default function MediaWithWatermark({ src, alt, className, rounded = false, contain = true, mode = 'visible' }: Props) {
   const watermark = import.meta.env.VITE_WATERMARK_TEXT || 'Meme Marketplace'
 
-  if (shouldUseImgOverlay(src)) {
+  const [useImg, setUseImg] = React.useState<boolean>(() => shouldUseImgOverlay(src))
+
+  React.useEffect(() => {
+    let aborted = false
+    // If URL lacks a known animated extension, try to detect by Content-Type via a small ranged GET
+    if (!shouldUseImgOverlay(src)) {
+      const controller = new AbortController()
+      fetch(src, { method: 'GET', headers: { Range: 'bytes=0-0' }, mode: 'cors', credentials: 'omit', signal: controller.signal })
+        .then((res) => {
+          const ct = (res.headers.get('Content-Type') || '').toLowerCase()
+          if (!aborted && (ct.includes('image/gif') || ct.includes('image/webp') || ct.includes('image/apng'))) {
+            setUseImg(true)
+          }
+        })
+        .catch(() => { /* ignore network/CORS issues; fallback stays */ })
+      return () => { aborted = true; controller.abort() }
+    }
+  }, [src])
+
+  if (useImg) {
     // Use <img> to preserve animation; overlay a visible corner watermark.
     return (
       <div className={["relative", className || '', rounded ? 'overflow-hidden rounded' : ''].join(' ').trim()} onContextMenu={(e)=>e.preventDefault()}>
@@ -42,7 +61,7 @@ export default function MediaWithWatermark({ src, alt, className, rounded = fals
     )
   }
 
-  // Non-GIF: use Canvas with watermark
+  // Static images: use Canvas with watermark
   return (
     <ImageCanvas src={src} alt={alt} className={className} rounded={rounded} contain={contain} mode={mode} />
   )
