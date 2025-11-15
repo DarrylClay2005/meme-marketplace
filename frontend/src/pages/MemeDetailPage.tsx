@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Meme, fetchMeme, likeMeme, unlikeMeme, buyMeme, fetchLikedMemes, UserProfile, fetchUserProfile } from '../api';
 import { useAuth } from '../auth';
-import ImageCanvas from '../components/ImageCanvas';
+import MediaWithWatermark from '../components/MediaWithWatermark';
 
 export const MemeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -139,7 +139,7 @@ export const MemeDetailPage: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="w-full max-h-[480px]">
-        <ImageCanvas src={meme.imageUrl} alt={meme.title} className="w-full max-h-[480px]" rounded contain mode="visible" />
+        <MediaWithWatermark src={meme.imageUrl} alt={meme.title} className="w-full max-h-[480px]" rounded contain mode="visible" />
       </div>
       <div className="flex justify-between items-center">
         <div>

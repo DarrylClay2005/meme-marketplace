@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Meme } from '../api';
 import { useAuth } from '../auth';
-import ImageCanvas from './ImageCanvas';
+import MediaWithWatermark from './MediaWithWatermark';
 
 interface MemeCardProps {
   meme: Meme;
@@ -58,7 +58,7 @@ export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
       to={`/memes/${meme.id}`}
       className="border border-slate-800 rounded overflow-hidden hover:border-emerald-500 transition"
     >
-      <ImageCanvas
+      <MediaWithWatermark
         src={meme.imageUrl}
         alt={meme.title}
         className="w-full h-48 bg-black"
