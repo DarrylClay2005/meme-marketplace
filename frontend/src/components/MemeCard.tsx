@@ -57,7 +57,11 @@ export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
       to={`/memes/${meme.id}`}
       className="border border-slate-800 rounded overflow-hidden hover:border-emerald-500 transition"
     >
-      <img src={meme.imageUrl} alt={meme.title} className="w-full h-48 object-cover" />
+      <img
+        src={meme.imageUrl}
+        alt={meme.title}
+        className="w-full h-48 object-contain bg-black"
+      />
       <div className="p-3 flex justify-between items-center text-sm">
         <div>
           <p className="font-semibold truncate max-w-[12rem]">{meme.title}</p>

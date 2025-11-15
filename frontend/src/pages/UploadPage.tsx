@@ -72,7 +72,7 @@ export const UploadPage: React.FC = () => {
       <h1 className="text-2xl font-semibold">Upload a Meme</h1>
       <p className="text-sm text-slate-300">
         This form talks to the backend API to generate a pre-signed S3 URL and then creates a
-        meme record in DynamoDB.
+        meme record in DynamoDB. Static images and animated GIFs are both supported.
       </p>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
