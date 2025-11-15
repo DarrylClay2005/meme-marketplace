@@ -40,6 +40,7 @@ export const Header: React.FC = () => {
         </nav>
       </div>
       <div className="flex items-center gap-3">
+        <span className="hidden md:inline text-[0.7rem] text-slate-400">Built by Darryl Clay</span>
         {token ? (
           <>
             {profile && (
