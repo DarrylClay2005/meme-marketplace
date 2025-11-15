@@ -23,8 +23,9 @@ uploadRoutes.post('/url', requireAuth, async (req: AuthRequest, res) => {
     const uploadUrl = await getUploadUrl(key, contentType);
 
     res.json({ key, uploadUrl });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[upload] failed to create upload url', { error });
-    res.status(500).json({ error: 'Failed to generate upload URL' });
+    const message = error?.message || 'Failed to generate upload URL';
+    res.status(500).json({ error: 'Failed to generate upload URL', detail: message });
   }
 });

@@ -73,8 +73,26 @@ export async function getUploadUrl(contentType: string, token: string): Promise<
     },
     body: JSON.stringify({ contentType })
   });
-  if (!res.ok) throw new Error('Failed to get upload URL');
-  return res.json();
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    // ignore JSON parse errors; we'll fall back to generic messages
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Unauthorized while requesting upload URL. Please sign in again.');
+    }
+    const backendMessage = data?.error || data?.detail || data?.message;
+    const msg = backendMessage
+      ? `Failed to get upload URL: ${backendMessage}`
+      : `Failed to get upload URL (status ${res.status})`;
+    throw new Error(msg);
+  }
+
+  return data as { key: string; uploadUrl: string };
 }
 
 export async function createMeme(params: { title: string; key: string; tags: string[]; price: number }, token: string): Promise<Meme> {

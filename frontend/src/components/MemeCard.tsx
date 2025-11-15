@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Meme } from '../api';
 import { useAuth } from '../auth';
+import ImageCanvas from './ImageCanvas';
 
 interface MemeCardProps {
   meme: Meme;
@@ -57,10 +58,12 @@ export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
       to={`/memes/${meme.id}`}
       className="border border-slate-800 rounded overflow-hidden hover:border-emerald-500 transition"
     >
-      <img
+      <ImageCanvas
         src={meme.imageUrl}
         alt={meme.title}
-        className="w-full h-48 object-contain bg-black"
+        className="w-full h-48 bg-black"
+        contain
+        mode="visible"
       />
       <div className="p-3 flex justify-between items-center text-sm">
         <div>
