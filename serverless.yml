@@ -26,6 +26,20 @@ provider:
         - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MEME_LIKES_TABLE_NAME}
     - Effect: Allow
       Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MEME_USERS_TABLE_NAME}
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:DeleteItem
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MEME_USERNAMES_TABLE_NAME}
+    - Effect: Allow
+      Action:
         - s3:PutObject
         - s3:GetObject
       Resource:
@@ -35,6 +49,8 @@ provider:
     REGION: ${self:provider.region}
     MEME_TABLE_NAME: ${self:service}-${self:provider.stage}-memes
     MEME_LIKES_TABLE_NAME: ${self:service}-${self:provider.stage}-likes
+    MEME_USERS_TABLE_NAME: ${self:service}-${self:provider.stage}-users
+    MEME_USERNAMES_TABLE_NAME: ${self:service}-${self:provider.stage}-usernames
     MEME_BUCKET_NAME: ${self:service}-${self:provider.stage}-images
     COGNITO_USER_POOL_ID:
       Ref: MemeUserPool
@@ -80,6 +96,30 @@ resources:
             KeyType: HASH
           - AttributeName: memeId
             KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+    MemeUsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MEME_USERS_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    MemeUsernamesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MEME_USERNAMES_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
         BillingMode: PAY_PER_REQUEST
 
     MemeImageBucket:

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes, incrementPurchases } from '../db/dynamodb';
+import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes, incrementPurchases, decrementLikes, removeUserLike } from '../db/dynamodb';
 import { requireAuth, AuthRequest } from '../middleware/auth';
-import { getPublicUrl } from '../db/s3';
+import { getPublicUrl, objectExists } from '../db/s3';
 import { randomUUID } from 'crypto';
 
 export const memeRoutes = Router();
@@ -62,6 +62,13 @@ memeRoutes.post('/', requireAuth, async (req: AuthRequest, res) => {
     const id = randomUUID();
     const now = new Date().toISOString();
 
+    // Guard: ensure the image object actually exists in S3 before we create a meme record.
+    const exists = await objectExists(key);
+    if (!exists) {
+      res.status(400).json({ error: 'Image file not found in storage. Please re-upload and try again.' });
+      return;
+    }
+
     const meme = {
       id,
       title,
@@ -97,6 +104,23 @@ memeRoutes.post('/:id/like', requireAuth, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('[memes] failed to like meme', { id: req.params.id, error });
     res.status(500).json({ error: 'Failed to like meme' });
+  }
+});
+
+memeRoutes.delete('/:id/like', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const memeId = req.params.id;
+    const userId = req.user!.sub;
+
+    const removed = await removeUserLike(userId, memeId);
+    if (removed) {
+      await decrementLikes(memeId);
+    }
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('[memes] failed to unlike meme', { id: req.params.id, error });
+    res.status(500).json({ error: 'Failed to unlike meme' });
   }
 });
 

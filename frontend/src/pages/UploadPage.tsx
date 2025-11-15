@@ -28,7 +28,7 @@ export const UploadPage: React.FC = () => {
       const { key, uploadUrl } = await getUploadUrl(file.type, token);
 
       setStatus('Uploading to S3...');
-      await fetch(uploadUrl, {
+      const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': file.type
@@ -36,31 +36,35 @@ export const UploadPage: React.FC = () => {
         body: file
       });
 
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload to storage failed with status ${uploadResponse.status}`);
+      }
+
       setStatus('Creating meme record...');
       const meme = await createMeme(
-      {
-        title,
-        key,
-        price,
-        tags: tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean)
-      },
-      token
-    );
+        {
+          title,
+          key,
+          price,
+          tags: tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        },
+        token
+      );
 
-    setStatus(`Uploaded! New meme ID: ${meme.id}`);
-    setTitle('');
-    setPrice(0);
-    setTags('');
-    setFile(null);
-  } catch (error: any) {
-    console.error('upload failed', error);
-    setStatus(`Upload failed: ${error?.message ?? 'Unknown error'}`);
-  } finally {
-    setSubmitting(false);
-  }
+      setStatus(`Uploaded! New meme ID: ${meme.id}`);
+      setTitle('');
+      setPrice(0);
+      setTags('');
+      setFile(null);
+    } catch (error: any) {
+      console.error('upload failed', error);
+      setStatus(`Upload failed: ${error?.message ?? 'Unknown error'}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

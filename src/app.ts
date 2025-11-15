@@ -3,6 +3,7 @@ import cors from 'cors';
 import { memeRoutes } from './routes/memes';
 import { authRoutes } from './routes/auth';
 import { uploadRoutes } from './routes/upload';
+import { userRoutes } from './routes/users';
 
 export const app = express();
 
@@ -16,3 +17,4 @@ app.get('/health', (req, res) => {
 app.use('/api/memes', memeRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/users', userRoutes);

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { MemeDetailPage } from './pages/MemeDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { UploadPage } from './pages/UploadPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -37,6 +38,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

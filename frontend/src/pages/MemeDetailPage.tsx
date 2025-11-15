@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Meme, fetchMeme, likeMeme, buyMeme } from '../api';
+import { Meme, fetchMeme, likeMeme, unlikeMeme, buyMeme, fetchLikedMemes, UserProfile, fetchUserProfile } from '../api';
 import { useAuth } from '../auth';
 
 export const MemeDetailPage: React.FC = () => {
@@ -8,23 +8,87 @@ export const MemeDetailPage: React.FC = () => {
   const [meme, setMeme] = useState<Meme | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [likedByUser, setLikedByUser] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [uploaderProfile, setUploaderProfile] = useState<UserProfile | null>(null);
   const { token } = useAuth();
 
   useEffect(() => {
     if (!id) return;
+
+    setLoading(true);
+    setError(null);
+    setUploaderProfile(null);
+
     fetchMeme(id)
-      .then(setMeme)
+      .then((m) => {
+        setMeme(m);
+        return m;
+      })
+      .then((m) => {
+        if (!m) return;
+        return fetchUserProfile(m.uploadedBy)
+          .then((profile) => setUploaderProfile(profile))
+          .catch((err) => {
+            console.error('failed to load uploader profile', err);
+          });
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [id]);
 
-  const handleLike = async () => {
+    if (token) {
+      fetchLikedMemes(token)
+        .then((likedMemes) => {
+          setLikedByUser(likedMemes.some((m) => m.id === id));
+        })
+        .catch((err) => {
+          console.error('failed to load liked memes for user', err);
+        });
+    } else {
+      setLikedByUser(false);
+    }
+  }, [id, token]);
+
+  const handleLikeToggle = async () => {
     if (!token || !id) {
       alert("You can't use this function yet, Sign In!");
       return;
     }
-    await likeMeme(id, token);
-    setMeme((m) => (m ? { ...m, likes: m.likes + 1 } : m));
+
+    try {
+      setLikeLoading(true);
+      if (likedByUser) {
+        await unlikeMeme(id, token);
+        setMeme((m) => (m ? { ...m, likes: Math.max(0, m.likes - 1) } : m));
+        setLikedByUser(false);
+      } else {
+        await likeMeme(id, token);
+        setMeme((m) => (m ? { ...m, likes: m.likes + 1 } : m));
+        setLikedByUser(true);
+      }
+    } catch (err: any) {
+      console.error('like toggle failed', err);
+      alert(`Failed to update like: ${err?.message ?? 'Unknown error'}`);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!meme) return;
+
+    // Use the browser's download mechanism for the meme image URL.
+    const link = document.createElement('a');
+    link.href = meme.imageUrl;
+
+    const safeTitle = meme.title
+      ? meme.title.replace(/[^a-z0-9]+/gi, '_').toLowerCase()
+      : 'meme';
+
+    link.download = `${safeTitle}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleBuy = async () => {
@@ -45,7 +109,7 @@ export const MemeDetailPage: React.FC = () => {
   if (error) return <p className="text-sm text-red-400">Error loading meme: {error}</p>;
   if (!meme) return <p className="text-sm text-slate-300">Meme not found.</p>;
 
-  const likeDisabled = !token;
+  const likeDisabled = !token || likeLoading;
   const buyDisabled = !token;
 
   return (
@@ -55,22 +119,45 @@ export const MemeDetailPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-semibold">{meme.title}</h1>
           <p className="text-sm text-slate-400">Uploaded: {new Date(meme.createdAt).toLocaleString()}</p>
-          <p className="text-sm text-slate-400">Likes: {meme.likes}</p>
+          <div className="flex items-center gap-2 text-sm text-slate-300 mt-1">
+            {uploaderProfile?.profileImageUrl && (
+              <img
+                src={uploaderProfile.profileImageUrl}
+                alt={uploaderProfile.username}
+                className="w-8 h-8 rounded-full object-cover border border-slate-700"
+              />
+            )}
+            <span>
+              Uploaded by:{' '}
+              <span className="font-semibold">
+                {uploaderProfile?.username ?? meme.uploadedBy}
+              </span>
+            </span>
+          </div>
+          <p className="text-sm text-slate-400 mt-1">Likes: {meme.likes}</p>
           <p className="text-sm text-slate-400">Bought: {meme.purchases ?? 0}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="text-lg font-semibold">${meme.price.toFixed(2)}</span>
           <div className="flex gap-2">
             <button
-              onClick={handleLike}
+              onClick={handleLikeToggle}
               disabled={likeDisabled}
               className={`px-3 py-1 rounded text-sm ${
                 likeDisabled
                   ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-500'
+                  : likedByUser
+                    ? 'bg-emerald-800 hover:bg-emerald-700'
+                    : 'bg-emerald-600 hover:bg-emerald-500'
               }`}
             >
-              {likeDisabled ? 'Login to like' : 'Like'}
+              {likeDisabled ? 'Login to like' : likedByUser ? 'Liked' : 'Like'}
+            </button>
+            <button
+              onClick={handleDownload}
+              className="px-3 py-1 rounded text-sm bg-slate-800 hover:bg-slate-700"
+            >
+              Download
             </button>
             <button
               onClick={handleBuy}

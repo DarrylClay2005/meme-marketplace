@@ -3,7 +3,7 @@
 This is my full-stack capstone project. I built a small meme marketplace where I can:
 
 - Upload meme images.
-- Browse a shared meme feed.
+- Browse a shared meme feed. (Not Implemented)
 - Like memes.
 - Do a demo “buy” action that increments a purchased count (no real payments).
 - See a dashboard of only the memes I’ve liked.

@@ -1,9 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, UpdateCommand, BatchWriteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, UpdateCommand, BatchWriteCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
 const region = process.env.REGION || 'us-east-1';
 const tableName = process.env.MEME_TABLE_NAME || 'meme-marketplace-api-dev-memes';
 const likesTableName = process.env.MEME_LIKES_TABLE_NAME || 'meme-marketplace-api-dev-likes';
+const usersTableName = process.env.MEME_USERS_TABLE_NAME || 'meme-marketplace-api-dev-users';
+const usernamesTableName = process.env.MEME_USERNAMES_TABLE_NAME || 'meme-marketplace-api-dev-usernames';
 
 const client = new DynamoDBClient({ region });
 export const docClient = DynamoDBDocumentClient.from(client);
@@ -18,6 +20,14 @@ export interface Meme {
   purchases: number;
   price: number;
   createdAt: string;
+}
+
+export interface UserProfile {
+  userId: string;
+  username: string;
+  profileImageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Simple set of starter memes so the homepage isn't empty on first load.
@@ -160,6 +170,20 @@ export async function incrementLikes(id: string): Promise<void> {
   );
 }
 
+export async function decrementLikes(id: string): Promise<void> {
+  await docClient.send(
+    new UpdateCommand({
+      TableName: tableName,
+      Key: { id },
+      UpdateExpression: 'SET likes = if_not_exists(likes, :zero) - :dec',
+      ExpressionAttributeValues: {
+        ':dec': 1,
+        ':zero': 0
+      }
+    })
+  );
+}
+
 export async function incrementPurchases(id: string): Promise<void> {
   await docClient.send(
     new UpdateCommand({
@@ -197,6 +221,28 @@ export async function recordUserLike(userId: string, memeId: string): Promise<bo
   }
 }
 
+export async function removeUserLike(userId: string, memeId: string): Promise<boolean> {
+  try {
+    await docClient.send(
+      new DeleteCommand({
+        TableName: likesTableName,
+        Key: {
+          userId,
+          memeId
+        },
+        ConditionExpression: 'attribute_exists(memeId)'
+      })
+    );
+    return true;
+  } catch (err: any) {
+    if (err && err.name === 'ConditionalCheckFailedException') {
+      // User had not liked this meme; not an error
+      return false;
+    }
+    throw err;
+  }
+}
+
 export async function getUserLikedMemes(userId: string): Promise<Meme[]> {
   const likesResult = await docClient.send(
     new QueryCommand({
@@ -213,4 +259,55 @@ export async function getUserLikedMemes(userId: string): Promise<Meme[]> {
 
   const memes = await Promise.all(likes.map((like) => getMeme(like.memeId)));
   return memes.filter((meme): meme is Meme => Boolean(meme));
+}
+
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: usersTableName,
+      Key: { userId }
+    })
+  );
+  if (!result.Item) return null;
+  return result.Item as UserProfile;
+}
+
+export async function putUserProfile(profile: UserProfile): Promise<void> {
+  await docClient.send(
+    new PutCommand({
+      TableName: usersTableName,
+      Item: profile
+    })
+  );
+}
+
+export async function reserveUsername(userId: string, username: string): Promise<boolean> {
+  try {
+    await docClient.send(
+      new PutCommand({
+        TableName: usernamesTableName,
+        Item: {
+          username,
+          userId,
+          createdAt: new Date().toISOString()
+        },
+        ConditionExpression: 'attribute_not_exists(username)'
+      })
+    );
+    return true;
+  } catch (err: any) {
+    if (err && err.name === 'ConditionalCheckFailedException') {
+      return false;
+    }
+    throw err;
+  }
+}
+
+export async function releaseUsername(username: string): Promise<void> {
+  await docClient.send(
+    new DeleteCommand({
+      TableName: usernamesTableName,
+      Key: { username }
+    })
+  );
 }

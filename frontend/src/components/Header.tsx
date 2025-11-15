@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getCognitoLoginUrl, getCognitoSignupUrl, useAuth } from '../auth';
+import { UserProfile, fetchCurrentUserProfile } from '../api';
 
 export const Header: React.FC = () => {
   const { token, setToken } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (!token) {
+      setProfile(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetchCurrentUserProfile(token)
+      .then((p) => {
+        if (!cancelled) setProfile(p);
+      })
+      .catch((err) => {
+        console.error('failed to load current user profile in header', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   return (
     <header className="border-b border-slate-800 px-4 py-3 flex items-center justify-between bg-slate-900">
@@ -12,6 +34,7 @@ export const Header: React.FC = () => {
         <nav className="flex gap-3 text-sm text-slate-300">
           <Link to="/" className="hover:text-emerald-400">Home</Link>
           <Link to="/dashboard" className="hover:text-emerald-400">Dashboard</Link>
+          <Link to="/profile" className="hover:text-emerald-400">Profile</Link>
           <Link to="/upload" className="hover:text-emerald-400">Upload</Link>
           <Link to="/register" className="hover:text-emerald-400">Register</Link>
         </nav>
@@ -19,7 +42,24 @@ export const Header: React.FC = () => {
       <div className="flex items-center gap-3">
         {token ? (
           <>
-            <span className="text-xs text-slate-300 hidden sm:inline">Logged in</span>
+            {profile && (
+              <div className="flex items-center gap-2 max-w-[10rem]">
+                {profile.profileImageUrl ? (
+                  <img
+                    src={profile.profileImageUrl}
+                    alt={profile.username}
+                    className="w-8 h-8 rounded-full object-cover border border-slate-700"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 text-xs">
+                    {profile.username?.[0]?.toUpperCase() ?? '?'}
+                  </div>
+                )}
+                <span className="text-xs sm:text-sm text-slate-200 font-medium truncate">
+                  {profile.username}
+                </span>
+              </div>
+            )}
             <button
               onClick={() => setToken(null)}
               className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs border border-slate-600"

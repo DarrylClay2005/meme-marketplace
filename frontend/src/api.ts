@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+// Default to the deployed API Gateway URL, but allow overriding via VITE_API_BASE_URL for local dev.
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'https://94whf4566l.execute-api.us-east-1.amazonaws.com';
 
 export interface Meme {
   id: string;
@@ -10,6 +12,12 @@ export interface Meme {
   purchases: number;
   uploadedBy: string;
   createdAt: string;
+}
+
+export interface UserProfile {
+  userId: string;
+  username: string;
+  profileImageUrl?: string;
 }
 
 export async function fetchMemes(): Promise<Meme[]> {
@@ -33,6 +41,16 @@ export async function likeMeme(id: string, token: string): Promise<void> {
     }
   });
   if (!res.ok) throw new Error('Failed to like meme');
+}
+
+export async function unlikeMeme(id: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/${id}/like`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error('Failed to unlike meme');
 }
 
 export async function buyMeme(id: string, token: string): Promise<void> {
@@ -79,5 +97,38 @@ export async function fetchLikedMemes(token: string): Promise<Meme[]> {
     }
   });
   if (!res.ok) throw new Error('Failed to load liked memes');
+  return res.json();
+}
+
+export async function fetchUserProfile(userId: string): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE_URL}/api/users/${userId}`);
+  if (!res.ok) throw new Error('Failed to load user profile');
+  return res.json();
+}
+
+export async function fetchCurrentUserProfile(token: string): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE_URL}/api/users/me`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!res.ok) throw new Error('Failed to load current user profile');
+  return res.json();
+}
+
+export async function updateCurrentUserProfile(
+  params: { username?: string; avatarKey?: string },
+  token: string
+): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE_URL}/api/users/me`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(params)
+  });
+  if (!res.ok) throw new Error('Failed to update profile');
   return res.json();
 }
