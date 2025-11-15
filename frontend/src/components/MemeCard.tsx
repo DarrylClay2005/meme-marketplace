@@ -1,15 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Meme } from '../api';
+import { useAuth } from '../auth';
 
 interface MemeCardProps {
   meme: Meme;
 }
 
 export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
+  const { token } = useAuth();
+  const downloadDisabled = !token;
+
   const handleDownload = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!token) {
+      alert("You can't use this function yet, Sign In!");
+      return;
+    }
 
     try {
       const response = await fetch(meme.imageUrl);
@@ -60,9 +69,14 @@ export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
           <span className="text-xs bg-slate-800 rounded px-2 py-1">${meme.price.toFixed(2)}</span>
           <button
             onClick={handleDownload}
-            className="text-[0.7rem] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700"
+            disabled={downloadDisabled}
+            className={`text-[0.7rem] px-2 py-1 rounded ${
+              downloadDisabled
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-800 hover:bg-slate-700'
+            }`}
           >
-            Download
+            {downloadDisabled ? 'Login to download' : 'Download'}
           </button>
         </div>
       </div>

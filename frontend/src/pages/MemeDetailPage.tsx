@@ -76,6 +76,10 @@ export const MemeDetailPage: React.FC = () => {
 
   const handleDownload = async () => {
     if (!meme) return;
+    if (!token) {
+      alert("You can't use this function yet, Sign In!");
+      return;
+    }
 
     try {
       const response = await fetch(meme.imageUrl);
@@ -129,6 +133,7 @@ export const MemeDetailPage: React.FC = () => {
 
   const likeDisabled = !token || likeLoading;
   const buyDisabled = !token;
+  const downloadDisabled = !token;
 
   return (
     <div className="space-y-4">
@@ -173,9 +178,14 @@ export const MemeDetailPage: React.FC = () => {
             </button>
             <button
               onClick={handleDownload}
-              className="px-3 py-1 rounded text-sm bg-slate-800 hover:bg-slate-700"
+              disabled={downloadDisabled}
+              className={`px-3 py-1 rounded text-sm ${
+                downloadDisabled
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  : 'bg-slate-800 hover:bg-slate-700'
+              }`}
             >
-              Download
+              {downloadDisabled ? 'Login to download' : 'Download'}
             </button>
             <button
               onClick={handleBuy}
