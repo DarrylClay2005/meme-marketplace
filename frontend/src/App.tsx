@@ -7,6 +7,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { UploadPage } from './pages/UploadPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { DownloadsPage } from './pages/DownloadsPage';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { useAuth } from './auth';
@@ -54,6 +55,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <UploadPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/downloads"
+            element={
+              <ProtectedRoute>
+                <DownloadsPage />
               </ProtectedRoute>
             }
           />

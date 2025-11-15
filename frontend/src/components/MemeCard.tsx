@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Meme } from '../api';
+import { recordDownload } from '../api';
 import { useAuth } from '../auth';
 import MediaWithWatermark from './MediaWithWatermark';
 
@@ -47,6 +48,9 @@ export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      // Record download for this user
+      try { await recordDownload(meme.id, token); } catch { /* non-fatal */ }
     } catch (err) {
       console.error('meme download failed', err);
       alert('Failed to download meme image. Please try again.');

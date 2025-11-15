@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes, incrementPurchases, decrementLikes, removeUserLike } from '../db/dynamodb';
+import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes, incrementPurchases, decrementLikes, removeUserLike, recordUserDownload, getUserDownloadedMemes } from '../db/dynamodb';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getPublicUrl, objectExists } from '../db/s3';
 import { randomUUID } from 'crypto';
@@ -121,6 +121,29 @@ memeRoutes.delete('/:id/like', requireAuth, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('[memes] failed to unlike meme', { id: req.params.id, error });
     res.status(500).json({ error: 'Failed to unlike meme' });
+  }
+});
+
+memeRoutes.get('/me/downloads', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const memes = await getUserDownloadedMemes(req.user!.sub);
+    res.json(memes);
+  } catch (error) {
+    console.error('[memes] failed to get downloads for user', { userId: req.user!.sub, error });
+    res.status(500).json({ error: 'Failed to load downloads' });
+  }
+});
+
+memeRoutes.post('/:id/download', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const memeId = req.params.id;
+    const meme = await getMeme(memeId);
+    if (!meme) return res.status(404).json({ error: 'Meme not found' });
+    await recordUserDownload(req.user!.sub, memeId);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('[memes] failed to record download', { id: req.params.id, error });
+    res.status(500).json({ error: 'Failed to record download' });
   }
 });
 

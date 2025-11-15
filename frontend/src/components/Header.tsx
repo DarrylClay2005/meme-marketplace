@@ -35,6 +35,7 @@ export const Header: React.FC = () => {
           <Link to="/" className="hover:text-emerald-400">Home</Link>
           <Link to="/dashboard" className="hover:text-emerald-400">Dashboard</Link>
           <Link to="/profile" className="hover:text-emerald-400">Profile</Link>
+          <Link to="/downloads" className="hover:text-emerald-400">Downloads</Link>
           <Link to="/upload" className="hover:text-emerald-400">Upload</Link>
           <Link to="/register" className="hover:text-emerald-400">Register</Link>
         </nav>

@@ -6,6 +6,7 @@ const tableName = process.env.MEME_TABLE_NAME || 'meme-marketplace-api-dev-memes
 const likesTableName = process.env.MEME_LIKES_TABLE_NAME || 'meme-marketplace-api-dev-likes';
 const usersTableName = process.env.MEME_USERS_TABLE_NAME || 'meme-marketplace-api-dev-users';
 const usernamesTableName = process.env.MEME_USERNAMES_TABLE_NAME || 'meme-marketplace-api-dev-usernames';
+const downloadsTableName = process.env.MEME_DOWNLOADS_TABLE_NAME || 'meme-marketplace-api-dev-downloads';
 
 const client = new DynamoDBClient({ region });
 export const docClient = DynamoDBDocumentClient.from(client);
@@ -258,6 +259,35 @@ export async function getUserLikedMemes(userId: string): Promise<Meme[]> {
   if (!likes.length) return [];
 
   const memes = await Promise.all(likes.map((like) => getMeme(like.memeId)));
+  return memes.filter((meme): meme is Meme => Boolean(meme));
+}
+
+export async function recordUserDownload(userId: string, memeId: string): Promise<void> {
+  await docClient.send(
+    new PutCommand({
+      TableName: downloadsTableName,
+      Item: {
+        userId,
+        memeId,
+        downloadedAt: new Date().toISOString()
+      }
+    })
+  );
+}
+
+export async function getUserDownloadedMemes(userId: string): Promise<Meme[]> {
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: downloadsTableName,
+      KeyConditionExpression: 'userId = :u',
+      ExpressionAttributeValues: {
+        ':u': userId
+      }
+    })
+  );
+  const items = (result.Items as { memeId: string }[] | undefined) ?? [];
+  if (!items.length) return [];
+  const memes = await Promise.all(items.map((d) => getMeme(d.memeId)));
   return memes.filter((meme): meme is Meme => Boolean(meme));
 }
 

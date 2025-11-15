@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Meme, fetchMeme, likeMeme, unlikeMeme, buyMeme, fetchLikedMemes, UserProfile, fetchUserProfile } from '../api';
+import { Meme, fetchMeme, likeMeme, unlikeMeme, buyMeme, fetchLikedMemes, UserProfile, fetchUserProfile, recordDownload } from '../api';
 import { useAuth } from '../auth';
 import MediaWithWatermark from '../components/MediaWithWatermark';
 
@@ -108,6 +108,9 @@ export const MemeDetailPage: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      // Record download for this user (best-effort)
+      try { await recordDownload(id, token); } catch { /* ignore */ }
     } catch (err) {
       console.error('meme download failed', err);
       alert('Failed to download meme image. Please try again.');

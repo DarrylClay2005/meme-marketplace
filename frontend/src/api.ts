@@ -124,6 +124,22 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile> {
   return res.json();
 }
 
+export async function recordDownload(id: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/${id}/download`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to record download');
+}
+
+export async function fetchDownloadedMemes(token: string): Promise<Meme[]> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/me/downloads`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to load downloads');
+  return res.json();
+}
+
 export async function fetchCurrentUserProfile(token: string): Promise<UserProfile> {
   const res = await fetch(`${API_BASE_URL}/api/users/me`, {
     headers: {
