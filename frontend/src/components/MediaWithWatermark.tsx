@@ -10,21 +10,22 @@ interface Props {
   mode?: 'visible' | 'subtle' | 'none'
 }
 
-function isGif(src: string) {
+function shouldUseImgOverlay(src: string) {
+  // Preserve animation for GIF, WebP (may be animated), and APNG by rendering an <img> element
   try {
     const url = new URL(src, window.location.href)
     const pathname = url.pathname.toLowerCase()
-    return /\.gif$/.test(pathname)
+    return /(\.gif|\.webp|\.apng)$/.test(pathname)
   } catch {
-    return /\.gif(\?.*)?$/i.test(src)
+    return /(\.gif|\.webp|\.apng)(\?.*)?$/i.test(src)
   }
 }
 
 export default function MediaWithWatermark({ src, alt, className, rounded = false, contain = true, mode = 'visible' }: Props) {
   const watermark = import.meta.env.VITE_WATERMARK_TEXT || 'Meme Marketplace'
 
-  if (isGif(src)) {
-    // Use <img> to preserve GIF animation; overlay a visible corner watermark.
+  if (shouldUseImgOverlay(src)) {
+    // Use <img> to preserve animation; overlay a visible corner watermark.
     return (
       <div className={["relative", className || '', rounded ? 'overflow-hidden rounded' : ''].join(' ').trim()} onContextMenu={(e)=>e.preventDefault()}>
         <img src={src} alt={alt} className={[contain ? 'object-contain' : 'object-cover', 'w-full h-full'].join(' ')} draggable={false} />
