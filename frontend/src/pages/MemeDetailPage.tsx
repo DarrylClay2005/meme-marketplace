@@ -4,6 +4,45 @@ import { Meme, fetchMeme, likeMeme, unlikeMeme, buyMeme, fetchLikedMemes, UserPr
 import { useAuth } from '../auth';
 import MediaWithWatermark from '../components/MediaWithWatermark';
 
+function OriginalDownload({ id }: { id: string }) {
+  const { token } = useAuth()
+  const [purchased, setPurchased] = React.useState<boolean>(false)
+  const [loading, setLoading] = React.useState<boolean>(true)
+
+  React.useEffect(() => {
+    if (!token) return
+    setLoading(true)
+    import('../api').then(async ({ checkPurchased }) => {
+      try { setPurchased(await checkPurchased(id, token)) } catch { setPurchased(false) } finally { setLoading(false) }
+    })
+  }, [id, token])
+
+  async function downloadOriginal() {
+    if (!token) return
+    const { fetchOriginalUrl, recordDownload } = await import('../api')
+    const url = await fetchOriginalUrl(id, token)
+    if (!url) return alert('Not authorized to download original')
+    const link = document.createElement('a')
+    link.href = url
+    link.download = ''
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    try { await recordDownload(id, token) } catch {}
+  }
+
+  return (
+    <button
+      onClick={downloadOriginal}
+      disabled={!purchased || loading}
+      className={`px-3 py-1 rounded text-sm ${!purchased || loading ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+      title={!purchased ? 'Buy (demo) first to unlock original' : 'Download original image'}
+    >
+      {loading ? 'Checking…' : purchased ? 'Download Original' : 'Locked (Buy first)'}
+    </button>
+  )
+}
+
 export const MemeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [meme, setMeme] = useState<Meme | null>(null);
@@ -197,8 +236,11 @@ export const MemeDetailPage: React.FC = () => {
                   : 'bg-slate-800 hover:bg-slate-700'
               }`}
             >
-              {downloadDisabled ? 'Login to download' : 'Download'}
+              {downloadDisabled ? 'Login to download' : 'Download (watermarked)'}
             </button>
+            {token && (
+              <OriginalDownload id={id!} />
+            )}
             <button
               onClick={handleBuy}
               disabled={buyDisabled}

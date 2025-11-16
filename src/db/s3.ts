@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const region = process.env.REGION || 'us-east-1';
@@ -35,6 +35,11 @@ export function extractKeyFromUrl(url: string): string | null {
 
 export async function deleteObjectByKey(key: string): Promise<void> {
   await s3Client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }))
+}
+
+export async function getReadUrl(key: string, expiresIn = 60): Promise<string> {
+  const cmd = new GetObjectCommand({ Bucket: bucketName, Key: key })
+  return getSignedUrl(s3Client, cmd, { expiresIn })
 }
 
 export async function objectExists(key: string): Promise<boolean> {

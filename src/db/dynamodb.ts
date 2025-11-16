@@ -7,6 +7,7 @@ const likesTableName = process.env.MEME_LIKES_TABLE_NAME || 'meme-marketplace-ap
 const usersTableName = process.env.MEME_USERS_TABLE_NAME || 'meme-marketplace-api-dev-users';
 const usernamesTableName = process.env.MEME_USERNAMES_TABLE_NAME || 'meme-marketplace-api-dev-usernames';
 const downloadsTableName = process.env.MEME_DOWNLOADS_TABLE_NAME || 'meme-marketplace-api-dev-downloads';
+const purchasesTableName = process.env.MEME_PURCHASES_TABLE_NAME || 'meme-marketplace-api-dev-purchases';
 
 const client = new DynamoDBClient({ region });
 export const docClient = DynamoDBDocumentClient.from(client);
@@ -288,6 +289,17 @@ export async function getUserDownloadRecords(userId: string): Promise<{ memeId: 
   return items.map(i => ({ memeId: i.memeId, downloadedAt: i.downloadedAt }));
 }
 
+export async function getDownloadsCountForMeme(memeId: string): Promise<number> {
+  const result = await docClient.send(new QueryCommand({
+    TableName: downloadsTableName,
+    IndexName: 'DownloadsByMeme',
+    KeyConditionExpression: 'memeId = :m',
+    ExpressionAttributeValues: { ':m': memeId },
+    Select: 'COUNT'
+  }))
+  return result.Count || 0
+}
+
 export async function getUserDownloadedMemes(userId: string): Promise<Meme[]> {
   const result = await docClient.send(
     new QueryCommand({
@@ -364,4 +376,26 @@ export async function deleteMeme(id: string): Promise<void> {
       Key: { id }
     })
   );
+}
+
+export async function recordUserPurchaseIfNew(userId: string, memeId: string): Promise<boolean> {
+  try {
+    await docClient.send(new PutCommand({
+      TableName: purchasesTableName,
+      Item: { userId, memeId, purchasedAt: new Date().toISOString() },
+      ConditionExpression: 'attribute_not_exists(memeId)'
+    }))
+    return true
+  } catch (err: any) {
+    if (err && err.name === 'ConditionalCheckFailedException') return false
+    throw err
+  }
+}
+
+export async function hasUserPurchased(userId: string, memeId: string): Promise<boolean> {
+  const res = await docClient.send(new GetCommand({
+    TableName: purchasesTableName,
+    Key: { userId, memeId }
+  }))
+  return !!res.Item
 }

@@ -73,7 +73,12 @@ export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
         <div>
           <p className="font-semibold truncate max-w-[12rem]">{meme.title}</p>
           <p className="text-xs text-slate-400">
-            Likes: {meme.likes} - Bought: {meme.purchases ?? 0}
+            Likes: {meme.likes} - Bought: {meme.purchases ?? 0}{' '}
+            {typeof (meme as any).downloadsCount === 'number' && (
+              <>
+                - Downloads: {(meme as any).downloadsCount}
+              </>
+            )}
           </p>
           {(() => {
             try {

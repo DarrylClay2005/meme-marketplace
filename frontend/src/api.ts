@@ -28,6 +28,26 @@ export async function fetchMemes(): Promise<Meme[]> {
   return res.json();
 }
 
+export async function fetchTrending(): Promise<Meme[]> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/trending`)
+  if (!res.ok) throw new Error('Failed to load trending')
+  return res.json()
+}
+
+export async function checkPurchased(id: string, token: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/${id}/purchased`, { headers: { 'Authorization': `Bearer ${token}` } })
+  if (!res.ok) return false
+  const data = await res.json()
+  return !!data?.purchased
+}
+
+export async function fetchOriginalUrl(id: string, token: string): Promise<string | null> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/${id}/original-url`, { headers: { 'Authorization': `Bearer ${token}` } })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data?.url || null
+}
+
 export async function fetchMeme(id: string): Promise<Meme> {
   const res = await fetch(`${API_BASE_URL}/api/memes/${id}`);
   if (!res.ok) throw new Error('Failed to load meme');

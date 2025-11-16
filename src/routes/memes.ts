@@ -18,8 +18,14 @@ memeRoutes.get('/', async (req, res) => {
   try {
     // Ensure we have some starter memes the first time the API is called
     await ensureStarterMemes();
-    const memes = await listMemes();
-    res.json(memes);
+    const base = await listMemes();
+    // Attach downloadsCount per meme (demo performance)
+    const { getDownloadsCountForMeme } = await import('../db/dynamodb');
+    const withCounts = await Promise.all(base.map(async (m) => ({
+      ...m,
+      downloadsCount: await getDownloadsCountForMeme(m.id)
+    })));
+    res.json(withCounts);
   } catch (error) {
     console.error('[memes] failed to list memes', error);
     res.status(500).json({ error: 'Failed to load memes' });
@@ -186,6 +192,50 @@ memeRoutes.delete('/admin/memes/:id', requireAuth, async (req: AuthRequest, res)
   }
 });
 
+memeRoutes.get('/trending', async (_req, res) => {
+  try {
+    const base = await listMemes();
+    const { getDownloadsCountForMeme } = await import('../db/dynamodb');
+    const withStats = await Promise.all(base.map(async (m) => {
+      const downloads = await getDownloadsCountForMeme(m.id)
+      const ageHours = Math.max(1, (Date.now() - new Date(m.createdAt).getTime()) / 3600000)
+      const score = m.likes + downloads * 2 - Math.log10(ageHours)
+      return { ...m, downloadsCount: downloads, trendingScore: score }
+    }))
+    withStats.sort((a, b) => (b.trendingScore ?? 0) - (a.trendingScore ?? 0))
+    res.json(withStats)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load trending' })
+  }
+});
+
+memeRoutes.get('/:id/purchased', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { hasUserPurchased } = await import('../db/dynamodb')
+    const purchased = await hasUserPurchased(req.user!.sub, req.params.id)
+    res.json({ purchased })
+  } catch (error) {
+    res.status(500).json({ error: 'Failed' })
+  }
+});
+
+memeRoutes.get('/:id/original-url', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { hasUserPurchased } = await import('../db/dynamodb')
+    const ok = await hasUserPurchased(req.user!.sub, req.params.id)
+    if (!ok) return res.status(403).json({ error: 'Not purchased' })
+    const m = await getMeme(req.params.id)
+    if (!m) return res.status(404).json({ error: 'Not found' })
+    const { extractKeyFromUrl, getReadUrl } = await import('../db/s3')
+    const key = extractKeyFromUrl(m.imageUrl)
+    if (!key) return res.status(500).json({ error: 'Bad key' })
+    const url = await getReadUrl(key, 60)
+    res.json({ url })
+  } catch (error) {
+    res.status(500).json({ error: 'Failed' })
+  }
+});
+
 memeRoutes.post('/:id/buy', requireAuth, async (req: AuthRequest, res) => {
   try {
     const meme = await getMeme(req.params.id);
@@ -194,11 +244,11 @@ memeRoutes.post('/:id/buy', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
-    // Increment the purchases counter for this meme
-    await incrementPurchases(meme.id);
+    // Demo purchase: upsert per-user purchase record and increment total only on first time
+    const { recordUserPurchaseIfNew } = await import('../db/dynamodb')
+    const created = await recordUserPurchaseIfNew(req.user!.sub, meme.id)
+    if (created) await incrementPurchases(meme.id)
 
-    // For this capstone, we don't persist purchases in a real payment system.
-    // We simply acknowledge the purchase to keep the flow simple and demo-friendly.
     res.status(201).json({
       message: 'Purchase recorded (demo only, no real payment processed)',
       memeId: meme.id,
