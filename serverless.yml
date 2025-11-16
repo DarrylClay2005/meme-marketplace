@@ -240,6 +240,12 @@ resources:
 
     MemeUserPoolDomain:
       Type: AWS::Cognito::UserPoolDomain
+      Properties:
+        # If this domain is already taken in your AWS account/region,
+        # update the string below and redeploy.
+        Domain: meme-marketplace-dev-darrylclay
+        UserPoolId:
+          Ref: MemeUserPool
 
     MemePurchasesTable:
       Type: AWS::DynamoDB::Table
@@ -256,9 +262,3 @@ resources:
           - AttributeName: memeId
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
-      Properties:
-        # If this domain is already taken in your AWS account/region,
-        # update the string below and redeploy.
-        Domain: meme-marketplace-dev-darrylclay
-        UserPoolId:
-          Ref: MemeUserPool
