@@ -156,9 +156,6 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: KEYS_ONLY
-            ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
 
     MemeImageBucket:
       Type: AWS::S3::Bucket
