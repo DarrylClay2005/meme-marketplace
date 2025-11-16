@@ -263,14 +263,13 @@ export async function getUserLikedMemes(userId: string): Promise<Meme[]> {
 }
 
 export async function recordUserDownload(userId: string, memeId: string): Promise<void> {
+  // Upsert one item per user+meme. This deduplicates while updating the timestamp.
   await docClient.send(
-    new PutCommand({
+    new UpdateCommand({
       TableName: downloadsTableName,
-      Item: {
-        userId,
-        memeId,
-        downloadedAt: new Date().toISOString()
-      }
+      Key: { userId, memeId },
+      UpdateExpression: 'SET downloadedAt = :ts',
+      ExpressionAttributeValues: { ':ts': new Date().toISOString() }
     })
   );
 }
