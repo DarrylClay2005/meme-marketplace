@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes, incrementPurchases, decrementLikes, removeUserLike, recordUserDownload, getUserDownloadedMemes } from '../db/dynamodb';
+import { createMeme, getMeme, listMemes, incrementLikes, ensureStarterMemes, recordUserLike, getUserLikedMemes, incrementPurchases, decrementLikes, removeUserLike, recordUserDownload, getUserDownloadedMemes, getUserDownloadRecords, deleteMeme } from '../db/dynamodb';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { getPublicUrl, objectExists } from '../db/s3';
 import { randomUUID } from 'crypto';
@@ -126,8 +126,12 @@ memeRoutes.delete('/:id/like', requireAuth, async (req: AuthRequest, res) => {
 
 memeRoutes.get('/me/downloads', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const memes = await getUserDownloadedMemes(req.user!.sub);
-    res.json(memes);
+    const records = await getUserDownloadRecords(req.user!.sub);
+    const items = await Promise.all(records.map(async (r) => ({
+      downloadedAt: r.downloadedAt,
+      meme: await getMeme(r.memeId),
+    })));
+    res.json(items.filter(i => i.meme));
   } catch (error) {
     console.error('[memes] failed to get downloads for user', { userId: req.user!.sub, error });
     res.status(500).json({ error: 'Failed to load downloads' });
@@ -144,6 +148,41 @@ memeRoutes.post('/:id/download', requireAuth, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('[memes] failed to record download', { id: req.params.id, error });
     res.status(500).json({ error: 'Failed to record download' });
+  }
+});
+
+// Admin utilities
+function ensureOwner(req: AuthRequest, res: any): boolean {
+  const owner = process.env.OWNER_USER_ID;
+  if (!owner || req.user!.sub !== owner) {
+    res.status(403).json({ error: 'Forbidden' });
+    return false;
+  }
+  return true;
+}
+
+memeRoutes.get('/admin/memes', requireAuth, async (req: AuthRequest, res) => {
+  if (!ensureOwner(req, res)) return;
+  try {
+    const memes = await listMemes();
+    res.json(memes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list memes' });
+  }
+});
+
+memeRoutes.delete('/admin/memes/:id', requireAuth, async (req: AuthRequest, res) => {
+  if (!ensureOwner(req, res)) return;
+  try {
+    const m = await getMeme(req.params.id);
+    if (!m) return res.status(404).json({ error: 'Not found' });
+    const { extractKeyFromUrl, deleteObjectByKey } = await import('../db/s3');
+    const key = extractKeyFromUrl(m.imageUrl);
+    if (key) await deleteObjectByKey(key);
+    await deleteMeme(m.id);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete meme' });
   }
 });
 

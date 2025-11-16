@@ -274,6 +274,20 @@ export async function recordUserDownload(userId: string, memeId: string): Promis
   );
 }
 
+export async function getUserDownloadRecords(userId: string): Promise<{ memeId: string; downloadedAt?: string }[]> {
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: downloadsTableName,
+      IndexName: 'DownloadsByTime',
+      KeyConditionExpression: 'userId = :u',
+      ExpressionAttributeValues: { ':u': userId },
+      ScanIndexForward: false
+    })
+  );
+  const items = (result.Items as { userId: string; memeId: string; downloadedAt?: string }[] | undefined) ?? [];
+  return items.map(i => ({ memeId: i.memeId, downloadedAt: i.downloadedAt }));
+}
+
 export async function getUserDownloadedMemes(userId: string): Promise<Meme[]> {
   const result = await docClient.send(
     new QueryCommand({
@@ -339,6 +353,15 @@ export async function releaseUsername(username: string): Promise<void> {
     new DeleteCommand({
       TableName: usernamesTableName,
       Key: { username }
+    })
+  );
+}
+
+export async function deleteMeme(id: string): Promise<void> {
+  await docClient.send(
+    new DeleteCommand({
+      TableName: tableName,
+      Key: { id }
     })
   );
 }

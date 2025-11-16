@@ -19,6 +19,14 @@ export const Header: React.FC = () => {
       .then((p) => {
         if (!cancelled) setProfile(p);
         try { localStorage.setItem('meme-marketplace-profile', JSON.stringify(p)); } catch {}
+        // Prime local downloaded IDs cache for badges
+        import('../api').then(async ({ fetchDownloadedMemes }) => {
+          try {
+            const recs = await fetchDownloadedMemes(token)
+            const ids = recs.map(r => r.meme.id)
+            localStorage.setItem('mm-dl-ids', JSON.stringify(ids))
+          } catch {}
+        })
       })
       .catch((err) => {
         console.error('failed to load current user profile in header', err);
@@ -38,6 +46,9 @@ export const Header: React.FC = () => {
           <Link to="/dashboard" className="hover:text-emerald-400">Dashboard</Link>
           <Link to="/profile" className="hover:text-emerald-400">Profile</Link>
           <Link to="/downloads" className="hover:text-emerald-400">Downloads</Link>
+          {profile?.userId === (import.meta.env.VITE_OWNER_USER_ID || 'e4c8a498-0041-701a-f19b-c8394ac28841') && (
+            <Link to="/admin" className="hover:text-emerald-400">Admin</Link>
+          )}
           <Link to="/upload" className="hover:text-emerald-400">Upload</Link>
           <Link to="/register" className="hover:text-emerald-400">Register</Link>
         </nav>

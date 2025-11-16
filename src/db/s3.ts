@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const region = process.env.REGION || 'us-east-1';
@@ -20,6 +20,21 @@ export async function getUploadUrl(key: string, contentType: string): Promise<st
 
 export function getPublicUrl(key: string): string {
   return `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+}
+
+export function extractKeyFromUrl(url: string): string | null {
+  const prefix = `https://${bucketName}.s3.${region}.amazonaws.com/`
+  if (url.startsWith(prefix)) return url.substring(prefix.length)
+  try {
+    const u = new URL(url)
+    return u.pathname.startsWith('/') ? u.pathname.substring(1) : u.pathname
+  } catch {
+    return null
+  }
+}
+
+export async function deleteObjectByKey(key: string): Promise<void> {
+  await s3Client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }))
 }
 
 export async function objectExists(key: string): Promise<boolean> {

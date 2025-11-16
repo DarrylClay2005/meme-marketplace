@@ -14,6 +14,8 @@ export interface Meme {
   createdAt: string;
 }
 
+export interface DownloadRecord { meme: Meme; downloadedAt?: string }
+
 export interface UserProfile {
   userId: string;
   username: string;
@@ -132,7 +134,7 @@ export async function recordDownload(id: string, token: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to record download');
 }
 
-export async function fetchDownloadedMemes(token: string): Promise<Meme[]> {
+export async function fetchDownloadedMemes(token: string): Promise<DownloadRecord[]> {
   const res = await fetch(`${API_BASE_URL}/api/memes/me/downloads`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
@@ -149,6 +151,23 @@ export async function fetchCurrentUserProfile(token: string): Promise<UserProfil
   });
   if (!res.ok) throw new Error('Failed to load current user profile');
   return res.json();
+}
+
+// Admin
+export async function adminListMemes(token: string): Promise<Meme[]> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/admin/memes`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!res.ok) throw new Error('Failed to list memes')
+  return res.json()
+}
+
+export async function adminDeleteMeme(id: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/memes/admin/memes/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!res.ok) throw new Error('Failed to delete meme')
 }
 
 export async function updateCurrentUserProfile(

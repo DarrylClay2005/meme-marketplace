@@ -75,6 +75,13 @@ export const MemeCard: React.FC<MemeCardProps> = ({ meme }) => {
           <p className="text-xs text-slate-400">
             Likes: {meme.likes} - Bought: {meme.purchases ?? 0}
           </p>
+          {(() => {
+            try {
+              const ids: string[] = JSON.parse(localStorage.getItem('mm-dl-ids') || '[]')
+              if (ids.includes(meme.id)) return <span className="text-[0.65rem] text-emerald-400">Downloaded</span>
+            } catch {}
+            return null
+          })()}
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="text-xs bg-slate-800 rounded px-2 py-1">${meme.price.toFixed(2)}</span>

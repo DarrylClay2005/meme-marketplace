@@ -138,6 +138,11 @@ export const MemeDetailPage: React.FC = () => {
   const likeDisabled = !token || likeLoading;
   const buyDisabled = !token;
   const downloadDisabled = !token;
+  let alreadyDownloaded = false;
+  try {
+    const ids: string[] = JSON.parse(localStorage.getItem('mm-dl-ids') || '[]')
+    alreadyDownloaded = !!(id && ids.includes(id))
+  } catch {}
 
   return (
     <div className="space-y-4">
@@ -168,6 +173,7 @@ export const MemeDetailPage: React.FC = () => {
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="text-lg font-semibold">${meme.price.toFixed(2)}</span>
+          {alreadyDownloaded && <span className="text-xs text-emerald-400">Downloaded</span>}
           <div className="flex gap-2">
             <button
               onClick={handleLikeToggle}
