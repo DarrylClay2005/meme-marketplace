@@ -22,7 +22,16 @@ function shouldUseImgOverlay(src: string) {
 }
 
 export default function MediaWithWatermark({ src, alt, className, rounded = false, contain = true, mode = 'visible' }: Props) {
-  const watermark = import.meta.env.VITE_WATERMARK_TEXT || 'Meme Marketplace'
+  const base = import.meta.env.VITE_WATERMARK_TEXT || 'Meme Marketplace'
+  let username = ''
+  try {
+    const raw = localStorage.getItem('meme-marketplace-profile')
+    if (raw) {
+      const p = JSON.parse(raw)
+      username = p?.username || ''
+    }
+  } catch {}
+  const watermark = username ? `${base} • ${username}` : base
 
   const [useImg, setUseImg] = React.useState<boolean>(() => shouldUseImgOverlay(src))
 

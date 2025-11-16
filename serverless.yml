@@ -139,12 +139,26 @@ resources:
             AttributeType: S
           - AttributeName: memeId
             AttributeType: S
+          - AttributeName: downloadedAt
+            AttributeType: S
         KeySchema:
           - AttributeName: userId
             KeyType: HASH
           - AttributeName: memeId
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
+        GlobalSecondaryIndexes:
+          - IndexName: DownloadsByTime
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: downloadedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: KEYS_ONLY
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
 
     MemeImageBucket:
       Type: AWS::S3::Bucket

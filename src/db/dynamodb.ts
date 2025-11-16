@@ -278,10 +278,12 @@ export async function getUserDownloadedMemes(userId: string): Promise<Meme[]> {
   const result = await docClient.send(
     new QueryCommand({
       TableName: downloadsTableName,
+      IndexName: 'DownloadsByTime',
       KeyConditionExpression: 'userId = :u',
       ExpressionAttributeValues: {
         ':u': userId
-      }
+      },
+      ScanIndexForward: false
     })
   );
   const items = (result.Items as { memeId: string }[] | undefined) ?? [];

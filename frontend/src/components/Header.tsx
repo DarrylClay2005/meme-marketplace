@@ -10,6 +10,7 @@ export const Header: React.FC = () => {
   useEffect(() => {
     if (!token) {
       setProfile(null);
+      try { localStorage.removeItem('meme-marketplace-profile'); } catch {}
       return;
     }
 
@@ -17,6 +18,7 @@ export const Header: React.FC = () => {
     fetchCurrentUserProfile(token)
       .then((p) => {
         if (!cancelled) setProfile(p);
+        try { localStorage.setItem('meme-marketplace-profile', JSON.stringify(p)); } catch {}
       })
       .catch((err) => {
         console.error('failed to load current user profile in header', err);
