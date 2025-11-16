@@ -42,6 +42,72 @@ memeRoutes.get('/me/liked', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+// Place multi-segment and specific routes BEFORE parameterized '/:id'
+memeRoutes.get('/trending', async (_req, res) => {
+  try {
+    const base = await listMemes();
+    const { getDownloadsCountForMeme } = await import('../db/dynamodb');
+    const withStats = await Promise.all(base.map(async (m) => {
+      const downloads = await getDownloadsCountForMeme(m.id)
+      const ageHours = Math.max(1, (Date.now() - new Date(m.createdAt).getTime()) / 3600000)
+      const score = m.likes + downloads * 2 - Math.log10(ageHours)
+      return { ...m, downloadsCount: downloads, trendingScore: score }
+    }))
+    withStats.sort((a, b) => (b.trendingScore ?? 0) - (a.trendingScore ?? 0))
+    res.json(withStats)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load trending' })
+  }
+});
+
+memeRoutes.get('/me/downloads', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const records = await getUserDownloadRecords(req.user!.sub);
+    const items = await Promise.all(records.map(async (r) => ({
+      downloadedAt: r.downloadedAt,
+      meme: await getMeme(r.memeId),
+    })));
+    res.json(items.filter(i => i.meme));
+  } catch (error) {
+    console.error('[memes] failed to get downloads for user', { userId: req.user!.sub, error });
+    res.status(500).json({ error: 'Failed to load downloads' });
+  }
+});
+
+function ensureOwner(req: AuthRequest, res: any): boolean {
+  const owner = process.env.OWNER_USER_ID;
+  if (!owner || req.user!.sub !== owner) {
+    res.status(403).json({ error: 'Forbidden' });
+    return false;
+  }
+  return true;
+}
+
+memeRoutes.get('/admin/memes', requireAuth, async (req: AuthRequest, res) => {
+  if (!ensureOwner(req, res)) return;
+  try {
+    const memes = await listMemes();
+    res.json(memes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list memes' });
+  }
+});
+
+memeRoutes.delete('/admin/memes/:id', requireAuth, async (req: AuthRequest, res) => {
+  if (!ensureOwner(req, res)) return;
+  try {
+    const m = await getMeme(req.params.id);
+    if (!m) return res.status(404).json({ error: 'Not found' });
+    const { extractKeyFromUrl, deleteObjectByKey } = await import('../db/s3');
+    const key = extractKeyFromUrl(m.imageUrl);
+    if (key) await deleteObjectByKey(key);
+    await deleteMeme(m.id);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete meme' });
+  }
+});
+
 memeRoutes.get('/:id', async (req, res) => {
   try {
     const meme = await getMeme(req.params.id);
@@ -157,57 +223,6 @@ memeRoutes.post('/:id/download', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-// Admin utilities
-function ensureOwner(req: AuthRequest, res: any): boolean {
-  const owner = process.env.OWNER_USER_ID;
-  if (!owner || req.user!.sub !== owner) {
-    res.status(403).json({ error: 'Forbidden' });
-    return false;
-  }
-  return true;
-}
-
-memeRoutes.get('/admin/memes', requireAuth, async (req: AuthRequest, res) => {
-  if (!ensureOwner(req, res)) return;
-  try {
-    const memes = await listMemes();
-    res.json(memes);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to list memes' });
-  }
-});
-
-memeRoutes.delete('/admin/memes/:id', requireAuth, async (req: AuthRequest, res) => {
-  if (!ensureOwner(req, res)) return;
-  try {
-    const m = await getMeme(req.params.id);
-    if (!m) return res.status(404).json({ error: 'Not found' });
-    const { extractKeyFromUrl, deleteObjectByKey } = await import('../db/s3');
-    const key = extractKeyFromUrl(m.imageUrl);
-    if (key) await deleteObjectByKey(key);
-    await deleteMeme(m.id);
-    res.json({ ok: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete meme' });
-  }
-});
-
-memeRoutes.get('/trending', async (_req, res) => {
-  try {
-    const base = await listMemes();
-    const { getDownloadsCountForMeme } = await import('../db/dynamodb');
-    const withStats = await Promise.all(base.map(async (m) => {
-      const downloads = await getDownloadsCountForMeme(m.id)
-      const ageHours = Math.max(1, (Date.now() - new Date(m.createdAt).getTime()) / 3600000)
-      const score = m.likes + downloads * 2 - Math.log10(ageHours)
-      return { ...m, downloadsCount: downloads, trendingScore: score }
-    }))
-    withStats.sort((a, b) => (b.trendingScore ?? 0) - (a.trendingScore ?? 0))
-    res.json(withStats)
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to load trending' })
-  }
-});
 
 memeRoutes.get('/:id/purchased', requireAuth, async (req: AuthRequest, res) => {
   try {
